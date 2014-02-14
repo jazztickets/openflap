@@ -1,13 +1,134 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+#include <cstdlib>
 #include <iostream>
+#include <stdexcept>
+#include <list>
 
-void Update(double FrameTime);
-void Render(double Blend);
+class _Player;
+class _Wall;
+void InitGame();
+void SpawnWall(float MidY);
+void CheckCollision();
+void Update(float FrameTime);
+void Render(float Blend);
+void DeleteObjects();
+bool CheckWallCollision(_Wall *Wall); 
 
-const double FPS = 60.0;
-static SDL_Texture *Texture = NULL;
+const int SCREEN_WIDTH = 800;
+const int SCREEN_HEIGHT = 600;
+const float FPS = 60.0;
+const float JUMP_POWER = 11.0f;
+const float GRAVITY = 0.5f;
+const float MAX_FALL_SPEED = 15.5f;
+const float WALL_VELOCITY = -3.5f;
+const float WALL_WIDTH = 100.0f;
+const float SPACING = 100.0f;
+const float SPAWNTIME = 1.6f;
+static float Time;
+static bool Dead;
+static float SpawnTimer;
+static _Player *Player;
 static SDL_Renderer *Renderer = NULL;
-static double x = 0, last_x = 0;
+static SDL_Texture *Texture = NULL;
+static SDL_Texture *WallTexture = NULL;
+std::list<_Wall *> Walls;
+std::list<_Wall *>::iterator WallsIterator;
+
+class _Player {
+
+	public:
+
+		_Player() : X(100), Y(0), VelocityX(0), VelocityY(0), Texture(NULL) {}
+		~_Player() {
+		}
+
+		void Init(SDL_Texture *Texture) {
+			Sprite.w = 64;
+			Sprite.h = 64;
+			LastX = X;
+			LastY = Y;
+			Radius = 32;
+			this->Texture = Texture;
+		}
+
+		void Update(float FrameTime) {
+			LastX = X;
+			LastY = Y;
+			X += VelocityX;
+			Y += VelocityY;
+			if(Y < 0.0f)
+				Y = 0.0f;
+			VelocityY += GRAVITY;
+			if(VelocityY > MAX_FALL_SPEED)
+				VelocityY = MAX_FALL_SPEED;
+
+		}
+
+		void Jump() {
+			VelocityY = -JUMP_POWER;
+		}
+
+		void Render(float Blend) {
+			Sprite.x = (Uint32)(X * Blend + LastX  * (1.0 - Blend)) - Radius;
+			Sprite.y = (Uint32)(Y * Blend + LastY  * (1.0 - Blend)) - Radius;
+	
+			SDL_QueryTexture(Texture, NULL, NULL, &Sprite.w, &Sprite.h);
+			SDL_RenderCopy(Renderer, Texture, NULL, &Sprite);
+		}
+	
+		float X, Y;
+		float LastX, LastY;
+		float VelocityX, VelocityY;
+		float Radius;
+		SDL_Rect Sprite;
+		SDL_Texture *Texture;
+
+};
+
+class _Wall {
+
+	public:
+
+		_Wall() : X(SCREEN_WIDTH), Y(0), VelocityX(WALL_VELOCITY), VelocityY(0), Texture(NULL) {}
+		~_Wall() {
+		}
+
+		void Init(SDL_Texture *Texture, float Y, float SizeX, float SizeY) {
+			Size.w = 64;
+			Size.h = 64;
+			this->Y = Y;
+			Sprite.w = SizeX;
+			Sprite.h = SizeY;
+			LastX = X;
+			LastY = Y;
+			this->Texture = Texture;
+		}
+
+		void Update(float FrameTime) {
+			LastX = X;
+			LastY = Y;
+			X += VelocityX;
+			Y += VelocityY;
+		}
+
+		void Render(float Blend) {
+			Sprite.x = (Uint32)(X * Blend + LastX  * (1.0 - Blend));
+			Sprite.y = (Uint32)(Y * Blend + LastY  * (1.0 - Blend));
+	
+			SDL_QueryTexture(Texture, NULL, NULL, &Size.w, &Size.h);
+			SDL_RenderCopy(Renderer, Texture, NULL, &Sprite);
+		}
+	
+		float X, Y;
+		float VelocityX, VelocityY;
+		float LastX, LastY;
+		float Radius;
+		SDL_Rect Size;
+		SDL_Rect Sprite;
+		SDL_Texture *Texture;
+
+};
 
 int main() {
 
@@ -17,7 +138,7 @@ int main() {
 	}
 	
 	SDL_Window *Window = NULL;
-	Window = SDL_CreateWindow("openflap", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_SHOWN);
+	Window = SDL_CreateWindow("openflap", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	if(!Window) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
@@ -29,25 +150,28 @@ int main() {
 		return 1;
 	}
 	
-	SDL_Surface *Image = NULL;
-	Image = SDL_LoadBMP("test.bmp");
-	if(Image == NULL) {
+	Texture = IMG_LoadTexture(Renderer, "player.png");
+	if(Texture == NULL) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
 
-	Texture = SDL_CreateTextureFromSurface(Renderer, Image);
-	SDL_FreeSurface(Image);
+	WallTexture = IMG_LoadTexture(Renderer, "wall.png");
+	if(WallTexture == NULL) {
+		std::cout << SDL_GetError() << std::endl;
+		return 1;
+	}
+
+	InitGame();
 	
 	bool Quit = false;
-	double Timer = SDL_GetPerformanceCounter();
-	double Time = 0.0;
-	double TimeStep = 1.0 / FPS;
-	double TimeStepAccumulator = 0.0;
+	float Timer = SDL_GetPerformanceCounter();
+	float TimeStep = 1.0f / FPS;
+	float TimeStepAccumulator = 0.0f;
     while(!Quit) {
 		
 		// Get frametime
-		double FrameTime = (SDL_GetPerformanceCounter() - Timer) / (double)SDL_GetPerformanceFrequency();
+		float FrameTime = (SDL_GetPerformanceCounter() - Timer) / (float)SDL_GetPerformanceFrequency();
 		Timer = SDL_GetPerformanceCounter();
 		
 		SDL_PumpEvents();
@@ -55,14 +179,34 @@ int main() {
 		while(SDL_PollEvent(&Event)) {
 			if(Event.type == SDL_QUIT)
 				Quit = true;
-			if(Event.type == SDL_KEYDOWN)
-				Quit = true;
+			if(Event.type == SDL_KEYDOWN) {
+				if(Event.key.keysym.sym == SDLK_ESCAPE)
+					Quit = true;
+				else if(Event.key.repeat == 0 && Event.key.keysym.sym == SDLK_SPACE)
+					Player->Jump();
+				/*
+				else if(Event.key.repeat == 0 && Event.key.keysym.sym == SDLK_RIGHT)
+					Player->VelocityX = 1;
+				else if(Event.key.repeat == 0 && Event.key.keysym.sym == SDLK_LEFT)
+					Player->VelocityX = -1;
+				else if(Event.key.repeat == 0 && Event.key.keysym.sym == SDLK_UP)
+					Player->VelocityY = -1;
+				else if(Event.key.repeat == 0 && Event.key.keysym.sym == SDLK_DOWN)
+					Player->VelocityY = 1;
+				else {
+
+					Player->VelocityX = 0;
+					Player->VelocityY = 0;
+				}
+				*/
+
+			}
 		}
 		
 		// Game loop
 		TimeStepAccumulator += FrameTime;
-		if(TimeStepAccumulator > 3.0)
-			TimeStepAccumulator = 3.0;
+		if(TimeStepAccumulator > 3.0f)
+			TimeStepAccumulator = 3.0f;
 		
 		while(TimeStepAccumulator >= TimeStep) {
 			Update(TimeStep);
@@ -70,17 +214,17 @@ int main() {
 		}
 
 		Render(TimeStepAccumulator * FPS);
-		SDL_RenderPresent(Renderer);
 
-		double ExtraTime = 1.0 / FPS - FrameTime;
-		if(ExtraTime > 0.0) {
+		float ExtraTime = 1.0f / FPS - FrameTime;
+		if(ExtraTime > 0.0f) {
 			SDL_Delay((Uint32)(ExtraTime * 1000));
 		}
 		Time += FrameTime;
-		//std::cout << Time << " " << FrameTime << std::endl;
 	}
 		
+	DeleteObjects();
 	SDL_DestroyTexture(Texture);
+	SDL_DestroyTexture(WallTexture);
 	SDL_DestroyRenderer(Renderer);
 	SDL_DestroyWindow(Window);
 	SDL_Quit();
@@ -88,20 +232,109 @@ int main() {
 	return 0;
 }
 
-void Update(double FrameTime) {
-	last_x = x;
-	x += 100 * FrameTime;
+void InitGame() {
+	DeleteObjects();
+	Player = new _Player();
+	
+	Dead = false;
+	Player->Init(Texture);
+	SpawnTimer = 0.0f;
+	Time = 0.0f;
 }
 
-void Render(double Blend) {
-	//std::cout << Blend << std::endl;
-	SDL_Rect pos;
-	pos.x = (Uint32)(x * Blend + last_x * (1.0 - Blend));
-	pos.y = 50;
-	pos.w = 128;
-	pos.h = 128;
-	
-	SDL_QueryTexture(Texture, NULL, NULL, &pos.w, &pos.h);
-	SDL_RenderClear(Renderer);
-	SDL_RenderCopy(Renderer, Texture, NULL, &pos);
+void CheckCollision() {
+	if(Player->Y > SCREEN_HEIGHT)
+		InitGame();
+
+	for(WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
+		_Wall *Wall = *WallsIterator;
+		if(CheckWallCollision(Wall)) {
+			InitGame();
+		}
+	}
 }
+
+void Update(float FrameTime) {
+	Player->Update(FrameTime);
+	for(WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ) {
+		_Wall *Wall = *WallsIterator;
+		Wall->Update(FrameTime);
+		if(Wall->X + Wall->Sprite.w < 0) {
+			delete Wall;
+			WallsIterator = Walls.erase(WallsIterator);
+		}
+		else {
+			++WallsIterator;
+		}
+	}
+
+	CheckCollision();
+
+	SpawnTimer -= FrameTime;
+	if(SpawnTimer <= 0.0f) {
+		SpawnWall((rand() % 400) + 100);
+		SpawnTimer = SPAWNTIME;
+	}
+}
+
+void Render(float Blend) {
+	SDL_RenderClear(Renderer);
+	for(WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
+		(*WallsIterator)->Render(Blend);
+	}
+	Player->Render(Blend);
+	SDL_RenderPresent(Renderer);
+}
+
+void SpawnWall(float MidY) {
+	float StartY, EndY;
+	StartY = 0;
+	EndY = MidY - SPACING;
+	_Wall *WallTop = new _Wall();
+	WallTop->Init(WallTexture, StartY, WALL_WIDTH, EndY - StartY);
+	Walls.push_back(WallTop);
+
+	StartY = MidY + SPACING;
+	EndY = SCREEN_HEIGHT;
+	_Wall *WallBottom = new _Wall();
+	WallBottom->Init(WallTexture, StartY, WALL_WIDTH, EndY - StartY);
+	Walls.push_back(WallBottom);
+}
+
+bool CheckWallCollision(_Wall *Wall) {
+	float AABB[4] = { Wall->X, Wall->Y, Wall->X + Wall->Sprite.w, Wall->Y + Wall->Sprite.h };
+
+	// Get closest point on AABB
+	float X = Player->X;
+	float Y = Player->Y;
+	if(X < AABB[0]) {
+		X = AABB[0];
+	}
+	if(Y < AABB[1]) {
+		Y = AABB[1];
+	}
+	if(X > AABB[2]) {
+		X = AABB[2];
+	}
+	if(Y > AABB[3]) {
+		Y = AABB[3];
+	}
+
+	// Test circle collision with point
+	float DistanceX = X - Player->X;
+	float DistanceY = Y - Player->Y;
+	float DistanceSquared = (DistanceX * DistanceX + DistanceY * DistanceY);
+	bool Hit = DistanceSquared < Player->Radius * Player->Radius;
+
+	return Hit;
+}
+
+void DeleteObjects() {
+	delete Player;
+	for(WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
+		delete (*WallsIterator);
+	}
+
+	Walls.clear();
+}
+
