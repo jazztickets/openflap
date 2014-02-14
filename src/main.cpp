@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+//#include <SDL/SDL_ttf.h>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
@@ -8,6 +9,7 @@
 class _Player;
 class _Wall;
 void InitGame();
+void Died();
 void SpawnWall(float MidY);
 void CheckCollision();
 void Update(float FrameTime);
@@ -23,15 +25,18 @@ const float GRAVITY = 0.5f;
 const float MAX_FALL_SPEED = 15.5f;
 const float WALL_VELOCITY = -3.5f;
 const float WALL_WIDTH = 100.0f;
-const float SPACING = 100.0f;
+const float SPACING = 105.0f;
 const float SPAWNTIME = 1.6f;
+const float WALL_BUFFER = 50.0f;
+
+static float HighScore = 0.0f;
 static float Time;
-static bool Dead;
 static float SpawnTimer;
 static _Player *Player;
 static SDL_Renderer *Renderer = NULL;
 static SDL_Texture *Texture = NULL;
 static SDL_Texture *WallTexture = NULL;
+//static TTF_Font *Font = NULL;
 std::list<_Wall *> Walls;
 std::list<_Wall *>::iterator WallsIterator;
 
@@ -137,6 +142,11 @@ int main() {
 		return 1;
 	}
 	
+	/*if(TTF_Init() != 0) {
+		std::cout << SDL_GetError() << std::endl;
+		return 1;
+	}*/
+
 	SDL_Window *Window = NULL;
 	Window = SDL_CreateWindow("openflap", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	if(!Window) {
@@ -150,6 +160,13 @@ int main() {
 		return 1;
 	}
 	
+	/*Font = TTF_OpenFont("sans.ttf", 18);
+	if(Font == NULL) {
+		std::cout << SDL_GetError() << std::endl;
+		return 1;
+	}
+	*/
+
 	Texture = IMG_LoadTexture(Renderer, "player.png");
 	if(Texture == NULL) {
 		std::cout << SDL_GetError() << std::endl;
@@ -232,11 +249,21 @@ int main() {
 	return 0;
 }
 
+void Died() {
+
+	std::cout << "Time: " << Time << std::endl;
+	if(Time > HighScore) {
+		HighScore = Time;
+		std::cout << "HIGH SCORE: " << Time << std::endl;
+	}
+
+	InitGame();
+}
+
 void InitGame() {
 	DeleteObjects();
 	Player = new _Player();
 	
-	Dead = false;
 	Player->Init(Texture);
 	SpawnTimer = 0.0f;
 	Time = 0.0f;
@@ -244,12 +271,12 @@ void InitGame() {
 
 void CheckCollision() {
 	if(Player->Y > SCREEN_HEIGHT)
-		InitGame();
+		Died();
 
 	for(WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
 		_Wall *Wall = *WallsIterator;
 		if(CheckWallCollision(Wall)) {
-			InitGame();
+			Died();
 		}
 	}
 }
@@ -272,7 +299,7 @@ void Update(float FrameTime) {
 
 	SpawnTimer -= FrameTime;
 	if(SpawnTimer <= 0.0f) {
-		SpawnWall((rand() % 400) + 100);
+		SpawnWall((rand() % int(SCREEN_HEIGHT - (SPACING+WALL_BUFFER)*2)) + WALL_BUFFER + SPACING);
 		SpawnTimer = SPAWNTIME;
 	}
 }

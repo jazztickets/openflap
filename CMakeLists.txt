@@ -16,4 +16,5 @@ add_executable(${PROJECT_NAME} ${SRC_LIST})
 target_link_libraries(${CMAKE_PROJECT_NAME}
 	${SDL2_LIBRARY}
 	/usr/lib/x86_64-linux-gnu/libSDL2_image.so
+	/usr/lib/x86_64-linux-gnu/libSDL_ttf.so
 )
