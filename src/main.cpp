@@ -41,6 +41,7 @@ static _Player *Player;
 static SDL_Renderer *Renderer = NULL;
 static SDL_Texture *Texture = NULL;
 static SDL_Texture *WallTexture = NULL;
+static SDL_Texture *TextTexture = NULL;
 static TTF_Font *Font = NULL;
 std::list<_Wall *> Walls;
 std::list<_Wall *>::iterator WallsIterator;
@@ -58,7 +59,7 @@ class _Player {
 			Sprite.h = 64;
 			LastX = X;
 			LastY = Y;
-			Radius = 32;
+			Radius = 29;
 			this->Texture = Texture;
 		}
 
@@ -263,6 +264,7 @@ void Died() {
 }
 
 void InitGame() {
+	TextTexture = NULL;
 	DeleteObjects();
 	Player = new _Player();
 	
@@ -379,8 +381,10 @@ void DrawText(const std::string &Text, int X, int Y, const SDL_Color &Color) {
 	SDL_Rect Bounds;
 	Bounds.x = X;
 	Bounds.y = Y;
+	if(TextTexture)
+		SDL_DestroyTexture(TextTexture);
 	SDL_Surface *TextSurface = TTF_RenderText_Blended(Font, Text.c_str(), Color);
-	SDL_Texture *TextTexture = SDL_CreateTextureFromSurface(Renderer, TextSurface);
+	TextTexture = SDL_CreateTextureFromSurface(Renderer, TextSurface);
 	SDL_QueryTexture(TextTexture, NULL, NULL, &Bounds.w, &Bounds.h);
 	SDL_RenderCopy(Renderer, TextTexture, NULL, &Bounds);
 	SDL_FreeSurface(TextSurface);
