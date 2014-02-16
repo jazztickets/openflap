@@ -1,13 +1,16 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-//#include <SDL/SDL_ttf.h>
+#include <SDL2/SDL_ttf.h>
 #include <cstdlib>
 #include <iostream>
+#include <iomanip>
 #include <stdexcept>
+#include <sstream>
 #include <list>
 
 class _Player;
 class _Wall;
+
 void InitGame();
 void Died();
 void SpawnWall(float MidY);
@@ -15,6 +18,7 @@ void CheckCollision();
 void Update(float FrameTime);
 void Render(float Blend);
 void DeleteObjects();
+void DrawText(const std::string &Text, int X, int Y, const SDL_Color &Color);
 bool CheckWallCollision(_Wall *Wall); 
 
 const int SCREEN_WIDTH = 800;
@@ -28,6 +32,7 @@ const float WALL_WIDTH = 100.0f;
 const float SPACING = 105.0f;
 const float SPAWNTIME = 1.6f;
 const float WALL_BUFFER = 50.0f;
+const SDL_Color ColorWhite = { 255, 255, 255, 255 };
 
 static float HighScore = 0.0f;
 static float Time;
@@ -36,7 +41,7 @@ static _Player *Player;
 static SDL_Renderer *Renderer = NULL;
 static SDL_Texture *Texture = NULL;
 static SDL_Texture *WallTexture = NULL;
-//static TTF_Font *Font = NULL;
+static TTF_Font *Font = NULL;
 std::list<_Wall *> Walls;
 std::list<_Wall *>::iterator WallsIterator;
 
@@ -78,7 +83,6 @@ class _Player {
 			Sprite.x = (Uint32)(X * Blend + LastX  * (1.0 - Blend)) - Radius;
 			Sprite.y = (Uint32)(Y * Blend + LastY  * (1.0 - Blend)) - Radius;
 	
-			SDL_QueryTexture(Texture, NULL, NULL, &Sprite.w, &Sprite.h);
 			SDL_RenderCopy(Renderer, Texture, NULL, &Sprite);
 		}
 	
@@ -121,7 +125,6 @@ class _Wall {
 			Sprite.x = (Uint32)(X * Blend + LastX  * (1.0 - Blend));
 			Sprite.y = (Uint32)(Y * Blend + LastY  * (1.0 - Blend));
 	
-			SDL_QueryTexture(Texture, NULL, NULL, &Size.w, &Size.h);
 			SDL_RenderCopy(Renderer, Texture, NULL, &Sprite);
 		}
 	
@@ -142,10 +145,10 @@ int main() {
 		return 1;
 	}
 	
-	/*if(TTF_Init() != 0) {
+	if(TTF_Init() != 0) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
-	}*/
+	}
 
 	SDL_Window *Window = NULL;
 	Window = SDL_CreateWindow("openflap", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
@@ -154,18 +157,18 @@ int main() {
 		return 1;
 	}
 	
+	//Renderer = SDL_CreateRenderer(Window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	Renderer = SDL_CreateRenderer(Window, -1, 0);
 	if(Renderer == NULL) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
 	
-	/*Font = TTF_OpenFont("sans.ttf", 18);
+	Font = TTF_OpenFont("arimo_regular.ttf", 18);
 	if(Font == NULL) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
-	*/
 
 	Texture = IMG_LoadTexture(Renderer, "player.png");
 	if(Texture == NULL) {
@@ -242,6 +245,7 @@ int main() {
 	DeleteObjects();
 	SDL_DestroyTexture(Texture);
 	SDL_DestroyTexture(WallTexture);
+	TTF_CloseFont(Font);
 	SDL_DestroyRenderer(Renderer);
 	SDL_DestroyWindow(Window);
 	SDL_Quit();
@@ -251,10 +255,8 @@ int main() {
 
 void Died() {
 
-	std::cout << "Time: " << Time << std::endl;
 	if(Time > HighScore) {
 		HighScore = Time;
-		std::cout << "HIGH SCORE: " << Time << std::endl;
 	}
 
 	InitGame();
@@ -310,6 +312,14 @@ void Render(float Blend) {
 		(*WallsIterator)->Render(Blend);
 	}
 	Player->Render(Blend);
+
+	std::ostringstream Buffer;
+	Buffer << std::fixed << std::setprecision(2) << "Time: " << Time;
+	DrawText(Buffer.str(), SCREEN_WIDTH - 160, 15, ColorWhite);
+
+	Buffer.str("");
+	Buffer << std::fixed << std::setprecision(2) << "High Score: " << HighScore;
+	DrawText(Buffer.str(), SCREEN_WIDTH - 160, 35, ColorWhite);
 	SDL_RenderPresent(Renderer);
 }
 
@@ -365,3 +375,13 @@ void DeleteObjects() {
 	Walls.clear();
 }
 
+void DrawText(const std::string &Text, int X, int Y, const SDL_Color &Color) {
+	SDL_Rect Bounds;
+	Bounds.x = X;
+	Bounds.y = Y;
+	SDL_Surface *TextSurface = TTF_RenderText_Blended(Font, Text.c_str(), Color);
+	SDL_Texture *TextTexture = SDL_CreateTextureFromSurface(Renderer, TextSurface);
+	SDL_QueryTexture(TextTexture, NULL, NULL, &Bounds.w, &Bounds.h);
+	SDL_RenderCopy(Renderer, TextTexture, NULL, &Bounds);
+	SDL_FreeSurface(TextSurface);
+}
