@@ -16,8 +16,9 @@ include_directories(${SDL2_IMAGE_INCLUDE_DIRS})
 include_directories("src/")
 
 # source code
-aux_source_directory(src SRC_LIST)
-add_executable(${PROJECT_NAME} ${SRC_LIST})
+file(GLOB SRC_MAIN src/*.cpp src/*.h)
+#aux_source_directory(src SRC_LIST)
+add_executable(${PROJECT_NAME} ${SRC_MAIN})
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
 	${SDL2_LIBRARY}
