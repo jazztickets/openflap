@@ -54,6 +54,7 @@ static SDL_Texture *WallTexture = NULL;
 static SDL_Texture *TextTexture = NULL;
 static SDL_Texture *BackTexture[4] = { NULL, NULL, NULL, NULL };
 static TTF_Font *Font = NULL;
+static SDL_Joystick *Controller = NULL;
 std::list<_Wall *> Walls;
 typedef std::list<_Wall *>::iterator WallsIteratorType;
 
@@ -161,6 +162,9 @@ int main() {
 		return 1;
 	}
 	
+	if(SDL_NumJoysticks() > 0)
+		Controller = SDL_JoystickOpen(0);
+	
 	InitGame();
 	
 	bool Quit = false;
@@ -173,18 +177,30 @@ int main() {
 		float FrameTime = (SDL_GetPerformanceCounter() - Timer) / (float)SDL_GetPerformanceFrequency();
 		Timer = SDL_GetPerformanceCounter();
 		
-		SDL_PumpEvents();
 		SDL_Event Event;
 		while(SDL_PollEvent(&Event)) {
-			if(Event.type == SDL_QUIT)
-				Quit = true;
-			if(Event.type == SDL_KEYDOWN && Event.key.repeat == 0) {
-				if(Event.key.keysym.sym == SDLK_ESCAPE)
+			bool Action = false;
+			switch(Event.type) {
+				case SDL_QUIT:
 					Quit = true;
+				break;
+				case SDL_KEYDOWN:
+					if(Event.key.repeat == 0) {
+						if(Event.key.keysym.sym == SDLK_ESCAPE)
+							Quit = true;
+						else if(Event.key.keysym.sym == SDLK_SPACE)
+							Action = true;
+					}
+				break;
+				case SDL_JOYBUTTONDOWN:
+				case SDL_MOUSEBUTTONDOWN:
+					Action = true;
+				break;
+			}
 
+			if(Action) {
 				if(State == STATE_PLAY) {
-					if(Event.key.keysym.sym == SDLK_SPACE)
-						Player->Jump(JUMP_POWER);
+					Player->Jump(JUMP_POWER);
 				}
 				else if(State == STATE_DIED && DiedTimer < 0) {
 					InitGame();
@@ -214,6 +230,7 @@ int main() {
 	SDL_DestroyTexture(Texture);
 	SDL_DestroyTexture(WallTexture);
 	TTF_CloseFont(Font);
+	SDL_JoystickClose(Controller);
 	SDL_DestroyRenderer(Renderer);
 	SDL_DestroyWindow(Window);
 	SDL_Quit();
