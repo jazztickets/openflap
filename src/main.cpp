@@ -36,7 +36,7 @@ const float GRAVITY = 1600.0f;
 const float DIED_WAIT_TIME = 0.3f;
 const float WALL_VELOCITY = -210.0f;
 const float WALL_WIDTH = 100.0f;
-const float SPACING = 102.0f;
+const float SPACING = 105.0f;
 const float SPAWNTIME = 1.6f;
 const float WALL_BUFFER = 50.0f;
 const SDL_Color ColorWhite = { 255, 255, 255, 255 };
@@ -295,20 +295,20 @@ void Render(float Blend) {
 	SDL_Rect Background;
 	Background.w = SCREEN_WIDTH;
 	Background.h = SCREEN_HEIGHT;
-	Background.x = int(-Time * 30) % SCREEN_WIDTH;
+	Background.x = int(-Time * 5) % SCREEN_WIDTH;
 	Background.y = 0;
 	SDL_RenderCopy(Renderer, BackTexture[0], NULL, &Background);
 	
-	Background.x = (int(-Time * 30) % SCREEN_WIDTH) + SCREEN_WIDTH;
+	Background.x = (int(-Time * 5) % SCREEN_WIDTH) + SCREEN_WIDTH;
 	SDL_RenderCopy(Renderer, BackTexture[0], NULL, &Background);
 
 	Background.w = SCREEN_WIDTH;
 	Background.h = 200;
-	Background.x = int(-Time * 70) % SCREEN_WIDTH;
+	Background.x = int(-Time * 30) % SCREEN_WIDTH;
 	Background.y = SCREEN_HEIGHT - Background.h;
 	SDL_RenderCopy(Renderer, BackTexture[1], NULL, &Background);
 
-	Background.x = int(-Time * 70) % SCREEN_WIDTH + SCREEN_WIDTH;
+	Background.x = int(-Time * 30) % SCREEN_WIDTH + SCREEN_WIDTH;
 	SDL_RenderCopy(Renderer, BackTexture[1], NULL, &Background);
 	
 	for(WallsIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
