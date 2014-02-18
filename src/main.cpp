@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <sstream>
 #include <list>
+#include "vector2.h"
+#include "physics.h"
 
 class _Player;
 class _Wall;
@@ -23,13 +25,13 @@ bool CheckWallCollision(_Wall *Wall);
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
-const float FPS = 60.0;
-const float JUMP_POWER = 11.0f;
-const float GRAVITY = 0.5f;
+const float FPS = 202.0;
+const float JUMP_POWER = 670.0f;
+const float GRAVITY = 1600.0f;
 const float MAX_FALL_SPEED = 15.5f;
-const float WALL_VELOCITY = -3.5f;
+const float WALL_VELOCITY = -3.5f * 60;
 const float WALL_WIDTH = 100.0f;
-const float SPACING = 105.0f;
+const float SPACING = 100.0f;
 const float SPAWNTIME = 1.6f;
 const float WALL_BUFFER = 50.0f;
 const SDL_Color ColorWhite = { 255, 255, 255, 255 };
@@ -50,47 +52,44 @@ class _Player {
 
 	public:
 
-		_Player() : X(100), Y(0), VelocityX(0), VelocityY(0), Texture(NULL) {}
+		_Player() : Texture(NULL), Physics(Vector2(100, 0), Vector2(0, 0), Vector2(0, GRAVITY)) {
+		}
+
 		~_Player() {
 		}
 
 		void Init(SDL_Texture *Texture) {
 			Sprite.w = 64;
 			Sprite.h = 64;
-			LastX = X;
-			LastY = Y;
 			Radius = 29;
 			this->Texture = Texture;
 		}
 
 		void Update(float FrameTime) {
-			LastX = X;
-			LastY = Y;
-			X += VelocityX;
-			Y += VelocityY;
-			if(Y < 0.0f)
-				Y = 0.0f;
-			VelocityY += GRAVITY;
-			if(VelocityY > MAX_FALL_SPEED)
-				VelocityY = MAX_FALL_SPEED;
-
+			Physics.Update(FrameTime);
+			if(Physics.GetPosition().Y < 0)
+				Physics.SetPosition(Vector2(Physics.GetPosition().X, 0));
+			//if(VelocityY > MAX_FALL_SPEED)
+			//	VelocityY = MAX_FALL_SPEED;
+			//std::cout << Physics.GetPosition().Y << std::endl;
+			//std::cout << Physics.GetAcceleration().Y << std::endl;
 		}
 
 		void Jump() {
-			VelocityY = -JUMP_POWER;
+			Physics.SetVelocity(Vector2(0, -JUMP_POWER));
 		}
 
 		void Render(float Blend) {
-			Sprite.x = (Uint32)(X * Blend + LastX  * (1.0 - Blend)) - Radius;
-			Sprite.y = (Uint32)(Y * Blend + LastY  * (1.0 - Blend)) - Radius;
+			const Vector2 &Position = Physics.GetPosition();
+			const Vector2 &LastPosition = Physics.GetLastPosition();
+			Sprite.x = (Uint32)(Position.X * Blend + LastPosition.X * (1.0 - Blend)) - Radius;
+			Sprite.y = (Uint32)(Position.Y * Blend + LastPosition.Y * (1.0 - Blend)) - Radius;
 	
 			SDL_RenderCopy(Renderer, Texture, NULL, &Sprite);
 		}
 	
-		float X, Y;
-		float LastX, LastY;
-		float VelocityX, VelocityY;
 		float Radius;
+		_Physics Physics;
 		SDL_Rect Sprite;
 		SDL_Texture *Texture;
 
@@ -118,8 +117,8 @@ class _Wall {
 		void Update(float FrameTime) {
 			LastX = X;
 			LastY = Y;
-			X += VelocityX;
-			Y += VelocityY;
+			X += VelocityX * FrameTime;
+			Y += VelocityY * FrameTime;
 		}
 
 		void Render(float Blend) {
@@ -235,6 +234,7 @@ int main() {
 		}
 
 		Render(TimeStepAccumulator * FPS);
+		//Render(1);
 
 		float ExtraTime = 1.0f / FPS - FrameTime;
 		if(ExtraTime > 0.0f) {
@@ -274,7 +274,7 @@ void InitGame() {
 }
 
 void CheckCollision() {
-	if(Player->Y > SCREEN_HEIGHT)
+	if(Player->Physics.GetPosition().Y > SCREEN_HEIGHT)
 		Died();
 
 	for(WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
@@ -344,8 +344,8 @@ bool CheckWallCollision(_Wall *Wall) {
 	float AABB[4] = { Wall->X, Wall->Y, Wall->X + Wall->Sprite.w, Wall->Y + Wall->Sprite.h };
 
 	// Get closest point on AABB
-	float X = Player->X;
-	float Y = Player->Y;
+	float X = Player->Physics.GetPosition().X;
+	float Y = Player->Physics.GetPosition().Y;
 	if(X < AABB[0]) {
 		X = AABB[0];
 	}
@@ -360,8 +360,8 @@ bool CheckWallCollision(_Wall *Wall) {
 	}
 
 	// Test circle collision with point
-	float DistanceX = X - Player->X;
-	float DistanceY = Y - Player->Y;
+	float DistanceX = X - Player->Physics.GetPosition().X;
+	float DistanceY = Y - Player->Physics.GetPosition().Y;
 	float DistanceSquared = (DistanceX * DistanceX + DistanceY * DistanceY);
 	bool Hit = DistanceSquared < Player->Radius * Player->Radius;
 
