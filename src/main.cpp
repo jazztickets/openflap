@@ -52,6 +52,7 @@ static SDL_Renderer *Renderer = NULL;
 static SDL_Texture *Texture = NULL;
 static SDL_Texture *WallTexture = NULL;
 static SDL_Texture *TextTexture = NULL;
+static SDL_Texture *BackTexture[4] = { NULL, NULL, NULL, NULL };
 static TTF_Font *Font = NULL;
 std::list<_Wall *> Walls;
 typedef std::list<_Wall *>::iterator WallsIteratorType;
@@ -147,7 +148,19 @@ int main() {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
-
+	
+	BackTexture[0] = IMG_LoadTexture(Renderer, "back0.png");
+	if(BackTexture[0] == NULL) {
+		std::cout << SDL_GetError() << std::endl;
+		return 1;
+	}
+	
+	BackTexture[1] = IMG_LoadTexture(Renderer, "back1.png");
+	if(BackTexture[1] == NULL) {
+		std::cout << SDL_GetError() << std::endl;
+		return 1;
+	}
+	
 	InitGame();
 	
 	bool Quit = false;
@@ -278,6 +291,26 @@ void Update(float FrameTime) {
 
 void Render(float Blend) {
 	SDL_RenderClear(Renderer);
+	
+	SDL_Rect Background;
+	Background.w = SCREEN_WIDTH;
+	Background.h = SCREEN_HEIGHT;
+	Background.x = int(-Time * 30) % SCREEN_WIDTH;
+	Background.y = 0;
+	SDL_RenderCopy(Renderer, BackTexture[0], NULL, &Background);
+	
+	Background.x = (int(-Time * 30) % SCREEN_WIDTH) + SCREEN_WIDTH;
+	SDL_RenderCopy(Renderer, BackTexture[0], NULL, &Background);
+
+	Background.w = SCREEN_WIDTH;
+	Background.h = 200;
+	Background.x = int(-Time * 70) % SCREEN_WIDTH;
+	Background.y = SCREEN_HEIGHT - Background.h;
+	SDL_RenderCopy(Renderer, BackTexture[1], NULL, &Background);
+
+	Background.x = int(-Time * 70) % SCREEN_WIDTH + SCREEN_WIDTH;
+	SDL_RenderCopy(Renderer, BackTexture[1], NULL, &Background);
+	
 	for(WallsIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
 		(*WallsIterator)->Render(Blend);
 	}
