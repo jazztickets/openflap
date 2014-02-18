@@ -52,8 +52,6 @@ union Vector2 {
 			float Y;
 		};
 		
-	private:
-
 		float Data[2];
 };
 

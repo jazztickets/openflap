@@ -1,12 +1,12 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
-#include <cstdlib>
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
 #include <sstream>
 #include <list>
+#include <random.h>
 #include <vector2.h>
 #include <physics.h>
 #include <player.h>
@@ -100,11 +100,13 @@ class _Wall {
 };
 
 int main() {
-
+	
 	if(SDL_Init(SDL_INIT_EVERYTHING) == -1) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
+	
+	Random.SetSeed(SDL_GetPerformanceCounter());
 	
 	if(TTF_Init() != 0) {
 		std::cout << SDL_GetError() << std::endl;
@@ -118,13 +120,16 @@ int main() {
 		return 1;
 	}
 	
-	Renderer = SDL_CreateRenderer(Window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	//Renderer = SDL_CreateRenderer(Window, -1, 0);
+	Uint32 Flags = 0;
+	Flags |= SDL_RENDERER_ACCELERATED;
+	Flags |= SDL_RENDERER_PRESENTVSYNC;
+	Renderer = SDL_CreateRenderer(Window, -1, Flags);
 	if(Renderer == NULL) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
 	
+	SDL_GL_SetSwapInterval(true);
 	Font = TTF_OpenFont("arimo_regular.ttf", 18);
 	if(Font == NULL) {
 		std::cout << SDL_GetError() << std::endl;
@@ -261,7 +266,7 @@ void Update(float FrameTime) {
 
 			SpawnTimer -= FrameTime;
 			if(SpawnTimer <= 0.0f) {
-				SpawnWall((rand() % int(SCREEN_HEIGHT - (SPACING+WALL_BUFFER)*2)) + WALL_BUFFER + SPACING);
+				SpawnWall(Random.GenerateRange(WALL_BUFFER + SPACING, SCREEN_HEIGHT - (WALL_BUFFER + SPACING)));
 				SpawnTimer = SPAWNTIME;
 			}
 		} break;
