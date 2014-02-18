@@ -7,10 +7,15 @@
 #include <stdexcept>
 #include <sstream>
 #include <list>
-#include "vector2.h"
-#include "physics.h"
+#include <vector2.h>
+#include <physics.h>
+#include <player.h>
 
-class _Player;
+enum GameState {
+	STATE_PLAY,
+	STATE_DIED,
+};
+
 class _Wall;
 
 void InitGame();
@@ -25,20 +30,23 @@ bool CheckWallCollision(_Wall *Wall);
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
-const float FPS = 202.0;
-const float JUMP_POWER = 670.0f;
+const float FPS = 100.0;
+const float JUMP_POWER = -670.0f;
 const float GRAVITY = 1600.0f;
-const float MAX_FALL_SPEED = 15.5f;
-const float WALL_VELOCITY = -3.5f * 60;
+const float DIED_WAIT_TIME = 0.4f;
+const float WALL_VELOCITY = -210.0f;
 const float WALL_WIDTH = 100.0f;
-const float SPACING = 100.0f;
+const float SPACING = 102.0f;
 const float SPAWNTIME = 1.6f;
 const float WALL_BUFFER = 50.0f;
 const SDL_Color ColorWhite = { 255, 255, 255, 255 };
+const SDL_Color ColorRed = { 255, 0, 0, 255 };
 
+static GameState State;
 static float HighScore = 0.0f;
 static float Time;
 static float SpawnTimer;
+static float DiedTimer = 0.0f;
 static _Player *Player;
 static SDL_Renderer *Renderer = NULL;
 static SDL_Texture *Texture = NULL;
@@ -47,53 +55,6 @@ static SDL_Texture *TextTexture = NULL;
 static TTF_Font *Font = NULL;
 std::list<_Wall *> Walls;
 std::list<_Wall *>::iterator WallsIterator;
-
-class _Player {
-
-	public:
-
-		_Player() : Texture(NULL), Physics(Vector2(100, 0), Vector2(0, 0), Vector2(0, GRAVITY)) {
-		}
-
-		~_Player() {
-		}
-
-		void Init(SDL_Texture *Texture) {
-			Sprite.w = 64;
-			Sprite.h = 64;
-			Radius = 29;
-			this->Texture = Texture;
-		}
-
-		void Update(float FrameTime) {
-			Physics.Update(FrameTime);
-			if(Physics.GetPosition().Y < 0)
-				Physics.SetPosition(Vector2(Physics.GetPosition().X, 0));
-			//if(VelocityY > MAX_FALL_SPEED)
-			//	VelocityY = MAX_FALL_SPEED;
-			//std::cout << Physics.GetPosition().Y << std::endl;
-			//std::cout << Physics.GetAcceleration().Y << std::endl;
-		}
-
-		void Jump() {
-			Physics.SetVelocity(Vector2(0, -JUMP_POWER));
-		}
-
-		void Render(float Blend) {
-			const Vector2 &Position = Physics.GetPosition();
-			const Vector2 &LastPosition = Physics.GetLastPosition();
-			Sprite.x = (Uint32)(Position.X * Blend + LastPosition.X * (1.0 - Blend)) - Radius;
-			Sprite.y = (Uint32)(Position.Y * Blend + LastPosition.Y * (1.0 - Blend)) - Radius;
-	
-			SDL_RenderCopy(Renderer, Texture, NULL, &Sprite);
-		}
-	
-		float Radius;
-		_Physics Physics;
-		SDL_Rect Sprite;
-		SDL_Texture *Texture;
-
-};
 
 class _Wall {
 
@@ -122,8 +83,8 @@ class _Wall {
 		}
 
 		void Render(float Blend) {
-			Sprite.x = (Uint32)(X * Blend + LastX  * (1.0 - Blend));
-			Sprite.y = (Uint32)(Y * Blend + LastY  * (1.0 - Blend));
+			Sprite.x = (Uint32)(X * Blend + LastX * (1.0f - Blend));
+			Sprite.y = (Uint32)(Y * Blend + LastY * (1.0f - Blend));
 	
 			SDL_RenderCopy(Renderer, Texture, NULL, &Sprite);
 		}
@@ -199,27 +160,17 @@ int main() {
 		while(SDL_PollEvent(&Event)) {
 			if(Event.type == SDL_QUIT)
 				Quit = true;
-			if(Event.type == SDL_KEYDOWN) {
+			if(Event.type == SDL_KEYDOWN && Event.key.repeat == 0) {
 				if(Event.key.keysym.sym == SDLK_ESCAPE)
 					Quit = true;
-				else if(Event.key.repeat == 0 && Event.key.keysym.sym == SDLK_SPACE)
-					Player->Jump();
-				/*
-				else if(Event.key.repeat == 0 && Event.key.keysym.sym == SDLK_RIGHT)
-					Player->VelocityX = 1;
-				else if(Event.key.repeat == 0 && Event.key.keysym.sym == SDLK_LEFT)
-					Player->VelocityX = -1;
-				else if(Event.key.repeat == 0 && Event.key.keysym.sym == SDLK_UP)
-					Player->VelocityY = -1;
-				else if(Event.key.repeat == 0 && Event.key.keysym.sym == SDLK_DOWN)
-					Player->VelocityY = 1;
-				else {
 
-					Player->VelocityX = 0;
-					Player->VelocityY = 0;
+				if(State == STATE_PLAY) {
+					if(Event.key.keysym.sym == SDLK_SPACE)
+						Player->Jump(JUMP_POWER);
 				}
-				*/
-
+				else if(State == STATE_DIED && DiedTimer < 0) {
+					InitGame();
+				}
 			}
 		}
 		
@@ -233,14 +184,15 @@ int main() {
 			TimeStepAccumulator -= TimeStep;
 		}
 
-		Render(TimeStepAccumulator * FPS);
-		//Render(1);
+		if(State == STATE_DIED)
+			Render(1);
+		else
+			Render(TimeStepAccumulator * FPS);
 
 		float ExtraTime = 1.0f / FPS - FrameTime;
 		if(ExtraTime > 0.0f) {
 			SDL_Delay((Uint32)(ExtraTime * 1000));
 		}
-		Time += FrameTime;
 	}
 		
 	DeleteObjects();
@@ -260,13 +212,16 @@ void Died() {
 		HighScore = Time;
 	}
 
-	InitGame();
+	State = STATE_DIED;
+	DiedTimer = DIED_WAIT_TIME;
+	Player->Physics.SetPosition(Player->Physics.GetLastPosition());
 }
 
 void InitGame() {
+	State = STATE_PLAY;
 	TextTexture = NULL;
 	DeleteObjects();
-	Player = new _Player();
+	Player = new _Player(_Physics(Vector2(100, 0), Vector2(0, 0), Vector2(0, GRAVITY)));
 	
 	Player->Init(Texture);
 	SpawnTimer = 0.0f;
@@ -286,25 +241,33 @@ void CheckCollision() {
 }
 
 void Update(float FrameTime) {
-	Player->Update(FrameTime);
-	for(WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ) {
-		_Wall *Wall = *WallsIterator;
-		Wall->Update(FrameTime);
-		if(Wall->X + Wall->Sprite.w < 0) {
-			delete Wall;
-			WallsIterator = Walls.erase(WallsIterator);
-		}
-		else {
-			++WallsIterator;
-		}
-	}
+	switch(State) {
+		case STATE_PLAY: {
+			Time += FrameTime;
+			Player->Update(FrameTime);
+			for(WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ) {
+				_Wall *Wall = *WallsIterator;
+				Wall->Update(FrameTime);
+				if(Wall->X + Wall->Sprite.w < 0) {
+					delete Wall;
+					WallsIterator = Walls.erase(WallsIterator);
+				}
+				else {
+					++WallsIterator;
+				}
+			}
 
-	CheckCollision();
+			CheckCollision();
 
-	SpawnTimer -= FrameTime;
-	if(SpawnTimer <= 0.0f) {
-		SpawnWall((rand() % int(SCREEN_HEIGHT - (SPACING+WALL_BUFFER)*2)) + WALL_BUFFER + SPACING);
-		SpawnTimer = SPAWNTIME;
+			SpawnTimer -= FrameTime;
+			if(SpawnTimer <= 0.0f) {
+				SpawnWall((rand() % int(SCREEN_HEIGHT - (SPACING+WALL_BUFFER)*2)) + WALL_BUFFER + SPACING);
+				SpawnTimer = SPAWNTIME;
+			}
+		} break;
+		case STATE_DIED:
+			DiedTimer -= FrameTime;
+		break;
 	}
 }
 
@@ -313,7 +276,7 @@ void Render(float Blend) {
 	for(WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
 		(*WallsIterator)->Render(Blend);
 	}
-	Player->Render(Blend);
+	Player->Render(Renderer, Blend);
 
 	std::ostringstream Buffer;
 	Buffer << std::fixed << std::setprecision(2) << "Time: " << Time;
@@ -322,6 +285,10 @@ void Render(float Blend) {
 	Buffer.str("");
 	Buffer << std::fixed << std::setprecision(2) << "High Score: " << HighScore;
 	DrawText(Buffer.str(), SCREEN_WIDTH - 160, 35, ColorWhite);
+
+	if(State == STATE_DIED)
+		DrawText("You Died!", 10, 10, ColorRed);
+
 	SDL_RenderPresent(Renderer);
 }
 

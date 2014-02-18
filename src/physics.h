@@ -1,7 +1,7 @@
 #pragma once
 
 // Libraries
-#include "vector2.h"
+#include <vector2.h>
 
 // Physics data
 class _Physics {

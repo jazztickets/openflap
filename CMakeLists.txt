@@ -9,6 +9,7 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 find_package(SDL2 REQUIRED)
 include_directories(/usr/local/include/SDL2)
 include_directories(${SDL2_INCLUDE_DIR})
+include_directories("src/")
 
 # source code
 aux_source_directory(src SRC_LIST)
