@@ -118,8 +118,8 @@ int main() {
 		return 1;
 	}
 	
-	//Renderer = SDL_CreateRenderer(Window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-	Renderer = SDL_CreateRenderer(Window, -1, 0);
+	Renderer = SDL_CreateRenderer(Window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+	//Renderer = SDL_CreateRenderer(Window, -1, 0);
 	if(Renderer == NULL) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
