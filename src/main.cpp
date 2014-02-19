@@ -328,6 +328,14 @@ void Render(float Blend) {
 	Background.x = int(-Time * 30) % SCREEN_WIDTH + SCREEN_WIDTH;
 	SDL_RenderCopy(Renderer, BackTexture[1], NULL, &Background);
 	
+	Background.h = 100;
+	Background.x = int(-(Time+5) * 50) % SCREEN_WIDTH;
+	Background.y = SCREEN_HEIGHT - Background.h;
+	SDL_RenderCopy(Renderer, BackTexture[1], NULL, &Background);
+
+	Background.x = int(-(Time+5) * 50) % SCREEN_WIDTH + SCREEN_WIDTH;
+	SDL_RenderCopy(Renderer, BackTexture[1], NULL, &Background);
+
 	for(WallsIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
 		(*WallsIterator)->Render(Blend);
 	}
