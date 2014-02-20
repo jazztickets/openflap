@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_mixer.h>
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
@@ -54,6 +55,8 @@ static SDL_Texture *TextTexture = NULL;
 static SDL_Texture *BackTexture[4] = { NULL, NULL, NULL, NULL };
 static TTF_Font *Font = NULL;
 static SDL_Joystick *Joystick = NULL;
+static Mix_Chunk *DieSound = NULL;
+static Mix_Chunk *SwoopSound = NULL;
 std::list<_Sprite *> Walls;
 std::list<_Sprite *> Backgrounds;
 typedef std::list<_Sprite *>::iterator SpriteIteratorType;
@@ -62,6 +65,18 @@ int main() {
 	
 	if(SDL_Init(SDL_INIT_EVERYTHING) == -1) {
 		std::cout << SDL_GetError() << std::endl;
+		return 1;
+	}
+	
+	int MixFlags = MIX_INIT_OGG;
+	int MixInit = Mix_Init(MixFlags);
+	if(MixInit & MixFlags != MixFlags) {
+		std::cout << Mix_GetError() << std::endl;
+		return 1;
+	}
+	
+	if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) < 0) {
+		std::cout << Mix_GetError() << std::endl;
 		return 1;
 	}
 	
@@ -122,6 +137,8 @@ int main() {
 	if(SDL_NumJoysticks() > 0)
 		Joystick = SDL_JoystickOpen(0);
 	
+	SwoopSound = Mix_LoadWAV("swoop.ogg");
+	DieSound = Mix_LoadWAV("die.ogg");
 	InitGame();
 	
 	bool Quit = false;
@@ -159,6 +176,7 @@ int main() {
 			if(Action) {
 				if(State == STATE_PLAY) {
 					Player->Jump(JUMP_POWER);
+					Mix_PlayChannel(-1, SwoopSound, 0);
 				}
 				else if(State == STATE_DIED && DiedTimer < 0) {
 					InitGame();
@@ -191,13 +209,18 @@ int main() {
 	SDL_JoystickClose(Joystick);
 	SDL_DestroyRenderer(Renderer);
 	SDL_DestroyWindow(Window);
+	Mix_FreeChunk(DieSound);
+	Mix_FreeChunk(SwoopSound);
+	Mix_CloseAudio();
+	Mix_Quit();
 	SDL_Quit();
 	
 	return 0;
 }
 
 void Died() {
-
+	Mix_PlayChannel(-1, DieSound, 0);
+	
 	if(Time > HighScore) {
 		HighScore = Time;
 	}
@@ -209,7 +232,6 @@ void Died() {
 
 	State = STATE_DIED;
 	DiedTimer = DIED_WAIT_TIME;
-	Player->Physics.SetLastPosition(Player->Physics.GetPosition());
 }
 
 void InitGame() {
@@ -266,7 +288,7 @@ void InitGame() {
 }
 
 void CheckCollision() {
-	if(Player->Physics.GetPosition().Y > SCREEN_HEIGHT)
+	if(Player->Physics.GetPosition().Y > SCREEN_HEIGHT + Player->Radius)
 		Died();
 
 	for(SpriteIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
@@ -278,45 +300,46 @@ void CheckCollision() {
 }
 
 void Update(float FrameTime) {
-	switch(State) {
-		case STATE_PLAY: {
-			Time += FrameTime;
-			Player->Update(FrameTime);
-			for(SpriteIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ) {
-				_Sprite *Wall = *WallsIterator;
-				Wall->Update(FrameTime);
-				if(Wall->Physics.GetPosition().X + Wall->Bounds.w < 0) {
-					delete Wall;
-					WallsIterator = Walls.erase(WallsIterator);
-				}
-				else {
-					++WallsIterator;
-				}
-			}
-			
-			for(SpriteIteratorType BackgroundIterator = Backgrounds.begin(); BackgroundIterator != Backgrounds.end(); ) {
-				_Sprite *Sprite = *BackgroundIterator;
-				Sprite->Update(FrameTime);
-				if(Sprite->Physics.GetPosition().X <= -SCREEN_WIDTH) {
-					Sprite->Physics.SetPosition(Vector2(SCREEN_WIDTH, Sprite->Physics.GetPosition().Y));
-					Sprite->Update(0);
-				}
-				
-				++BackgroundIterator;
-			}
-			
-			CheckCollision();
-
-			SpawnTimer -= FrameTime;
-			if(SpawnTimer <= 0.0f) {
-				SpawnWall(Random.GenerateRange(WALL_BUFFER + SPACING, SCREEN_HEIGHT - (WALL_BUFFER + SPACING)));
-				SpawnTimer = SPAWNTIME;
-			}
-		} break;
-		case STATE_DIED:
-			DiedTimer -= FrameTime;
-		break;
+	if(State == STATE_PLAY)
+		Time += FrameTime;
+		
+	Player->Update(FrameTime);
+	for(SpriteIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ) {
+		_Sprite *Wall = *WallsIterator;
+		Wall->Update(FrameTime);
+		if(Wall->Physics.GetPosition().X + Wall->Bounds.w < 0) {
+			delete Wall;
+			WallsIterator = Walls.erase(WallsIterator);
+		}
+		else {
+			++WallsIterator;
+		}
 	}
+	
+	for(SpriteIteratorType BackgroundIterator = Backgrounds.begin(); BackgroundIterator != Backgrounds.end(); ) {
+		_Sprite *Sprite = *BackgroundIterator;
+		Sprite->Update(FrameTime);
+		if(Sprite->Physics.GetPosition().X <= -SCREEN_WIDTH) {
+			Sprite->Physics.SetPosition(Vector2(SCREEN_WIDTH, Sprite->Physics.GetPosition().Y));
+			Sprite->Update(0);
+		}
+		
+		++BackgroundIterator;
+	}
+	
+
+	if(State == STATE_PLAY) {
+		
+		SpawnTimer -= FrameTime;
+		if(SpawnTimer <= 0.0f) {
+			SpawnWall(Random.GenerateRange(WALL_BUFFER + SPACING, SCREEN_HEIGHT - (WALL_BUFFER + SPACING)));
+			SpawnTimer = SPAWNTIME;
+		}
+		
+		CheckCollision();
+	}
+	else
+		DiedTimer -= FrameTime;
 }
 
 void Render(float Blend) {
@@ -325,24 +348,7 @@ void Render(float Blend) {
 	for(SpriteIteratorType BackgroundIterator = Backgrounds.begin(); BackgroundIterator != Backgrounds.end(); ++BackgroundIterator) {
 		(*BackgroundIterator)->Render(Renderer, Blend);
 	}
-	/*
-	Background.w = SCREEN_WIDTH;
-	Background.h = 200;
-	Background.x = int(-Time * 30) % SCREEN_WIDTH;
-	Background.y = SCREEN_HEIGHT - Background.h;
-	SDL_RenderCopy(Renderer, BackTexture[1], NULL, &Background);
 
-	Background.x = int(-Time * 30) % SCREEN_WIDTH + SCREEN_WIDTH;
-	SDL_RenderCopy(Renderer, BackTexture[1], NULL, &Background);
-	
-	Background.h = 100;
-	Background.x = int(-(Time+5) * 50) % SCREEN_WIDTH;
-	Background.y = SCREEN_HEIGHT - Background.h;
-	SDL_RenderCopy(Renderer, BackTexture[1], NULL, &Background);
-
-	Background.x = int(-(Time+5) * 50) % SCREEN_WIDTH + SCREEN_WIDTH;
-	SDL_RenderCopy(Renderer, BackTexture[1], NULL, &Background);
-*/
 	for(SpriteIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
 		(*WallsIterator)->Render(Renderer, Blend);
 	}

@@ -6,7 +6,7 @@
       <Project Name="openflap" ConfigName="Debug"/>
       <Project Name="openflap" ConfigName="Debug"/>
     </WorkspaceConfiguration>
-    <WorkspaceConfiguration Name="Release" Selected="yes">
+    <WorkspaceConfiguration Name="Release" Selected="no">
       <Project Name="openflap" ConfigName="Release"/>
       <Project Name="openflap" ConfigName="Release"/>
     </WorkspaceConfiguration>
