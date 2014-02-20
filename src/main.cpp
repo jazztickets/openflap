@@ -139,6 +139,7 @@ int main() {
 	
 	SwoopSound = Mix_LoadWAV("swoop.ogg");
 	DieSound = Mix_LoadWAV("die.ogg");
+	
 	InitGame();
 	
 	bool Quit = false;
@@ -395,18 +396,14 @@ bool CheckWallCollision(_Sprite *Wall) {
 	// Get closest point on AABB
 	float X = Player->Physics.GetPosition().X;
 	float Y = Player->Physics.GetPosition().Y;
-	if(X < AABB[0]) {
+	if(X < AABB[0])
 		X = AABB[0];
-	}
-	if(Y < AABB[1]) {
+	if(Y < AABB[1])
 		Y = AABB[1];
-	}
-	if(X > AABB[2]) {
+	if(X > AABB[2])
 		X = AABB[2];
-	}
-	if(Y > AABB[3]) {
+	if(Y > AABB[3])
 		Y = AABB[3];
-	}
 
 	// Test circle collision with point
 	float DistanceX = X - Player->Physics.GetPosition().X;
@@ -418,6 +415,7 @@ bool CheckWallCollision(_Sprite *Wall) {
 }
 
 void DeleteObjects() {
+	
 	delete Player;
 	for(SpriteIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
 		delete (*WallsIterator);
@@ -436,6 +434,7 @@ void DrawText(const std::string &Text, int X, int Y, const SDL_Color &Color) {
 	Bounds.y = Y;
 	if(TextTexture)
 		SDL_DestroyTexture(TextTexture);
+		
 	SDL_Surface *TextSurface = TTF_RenderText_Blended(Font, Text.c_str(), Color);
 	TextTexture = SDL_CreateTextureFromSurface(Renderer, TextSurface);
 	SDL_QueryTexture(TextTexture, NULL, NULL, &Bounds.w, &Bounds.h);
