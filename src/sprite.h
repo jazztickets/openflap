@@ -5,22 +5,20 @@
 #include <vector2.h>
 #include <physics.h>
 
-// Player data
-class _Player {
+// Sprite class
+class _Sprite {
 
 	public:
 
-		_Player(const _Physics &Physics) : Texture(NULL), Physics(Physics) { }
-		~_Player() { }
+		_Sprite() : Texture(NULL) { }
+		~_Sprite() { }
 
-		void Init(SDL_Texture *Texture);
 		void Update(float FrameTime);
-		void Jump(float Power);
 		void Render(SDL_Renderer *Renderer, float Blend);
 	
 		float Radius;
 		_Physics Physics;
-		SDL_Rect Sprite;
+		SDL_Rect Bounds;
 		SDL_Texture *Texture;
 
 };

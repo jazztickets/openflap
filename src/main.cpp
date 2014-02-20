@@ -10,13 +10,12 @@
 #include <vector2.h>
 #include <physics.h>
 #include <player.h>
+#include <sprite.h>
 
 enum GameState {
 	STATE_PLAY,
 	STATE_DIED,
 };
-
-class _Wall;
 
 void InitGame();
 void Died();
@@ -26,7 +25,7 @@ void Update(float FrameTime);
 void Render(float Blend);
 void DeleteObjects();
 void DrawText(const std::string &Text, int X, int Y, const SDL_Color &Color);
-bool CheckWallCollision(_Wall *Wall); 
+bool CheckWallCollision(_Sprite *Wall); 
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
@@ -54,52 +53,10 @@ static SDL_Texture *WallTexture = NULL;
 static SDL_Texture *TextTexture = NULL;
 static SDL_Texture *BackTexture[4] = { NULL, NULL, NULL, NULL };
 static TTF_Font *Font = NULL;
-static SDL_Joystick *Controller = NULL;
-std::list<_Wall *> Walls;
-typedef std::list<_Wall *>::iterator WallsIteratorType;
-
-class _Wall {
-
-	public:
-
-		_Wall() : X(SCREEN_WIDTH), Y(0), VelocityX(WALL_VELOCITY), VelocityY(0), Texture(NULL) {}
-		~_Wall() {
-		}
-
-		void Init(SDL_Texture *Texture, float Y, float SizeX, float SizeY) {
-			Size.w = 64;
-			Size.h = 64;
-			this->Y = Y;
-			Sprite.w = SizeX;
-			Sprite.h = SizeY;
-			LastX = X;
-			LastY = Y;
-			this->Texture = Texture;
-		}
-
-		void Update(float FrameTime) {
-			LastX = X;
-			LastY = Y;
-			X += VelocityX * FrameTime;
-			Y += VelocityY * FrameTime;
-		}
-
-		void Render(float Blend) {
-			Sprite.x = (Uint32)(X * Blend + LastX * (1.0f - Blend) + 0.5f);
-			Sprite.y = (Uint32)(Y * Blend + LastY * (1.0f - Blend) + 0.5f);
-	
-			SDL_RenderCopy(Renderer, Texture, NULL, &Sprite);
-		}
-	
-		float X, Y;
-		float VelocityX, VelocityY;
-		float LastX, LastY;
-		float Radius;
-		SDL_Rect Size;
-		SDL_Rect Sprite;
-		SDL_Texture *Texture;
-
-};
+static SDL_Joystick *Joystick = NULL;
+std::list<_Sprite *> Walls;
+std::list<_Sprite *> Backgrounds;
+typedef std::list<_Sprite *>::iterator SpriteIteratorType;
 
 int main() {
 	
@@ -163,7 +120,7 @@ int main() {
 	}
 	
 	if(SDL_NumJoysticks() > 0)
-		Controller = SDL_JoystickOpen(0);
+		Joystick = SDL_JoystickOpen(0);
 	
 	InitGame();
 	
@@ -171,6 +128,7 @@ int main() {
 	float Timer = SDL_GetPerformanceCounter();
 	float TimeStep = 1.0f / FPS;
 	float TimeStepAccumulator = 0.0f;
+	
     while(!Quit) {
 		
 		// Get frametime
@@ -230,7 +188,7 @@ int main() {
 	SDL_DestroyTexture(Texture);
 	SDL_DestroyTexture(WallTexture);
 	TTF_CloseFont(Font);
-	SDL_JoystickClose(Controller);
+	SDL_JoystickClose(Joystick);
 	SDL_DestroyRenderer(Renderer);
 	SDL_DestroyWindow(Window);
 	SDL_Quit();
@@ -243,8 +201,10 @@ void Died() {
 	if(Time > HighScore) {
 		HighScore = Time;
 	}
-	for(WallsIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
-		(*WallsIterator)->LastX = (*WallsIterator)->X;
+	
+	for(SpriteIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
+		(*WallsIterator)->Physics.SetVelocity(Vector2(0, 0));
+		(*WallsIterator)->Update(0);
 	}
 
 	State = STATE_DIED;
@@ -257,18 +217,60 @@ void InitGame() {
 	TextTexture = NULL;
 	DeleteObjects();
 	Player = new _Player(_Physics(Vector2(100, 0), Vector2(0, 0), Vector2(0, GRAVITY)));
-	
 	Player->Init(Texture);
 	SpawnTimer = 0.0f;
 	Time = 0.0f;
+	
+	_Sprite *Background;
+	Background = new _Sprite();
+	Background->Texture = BackTexture[0];
+	Background->Bounds.w = SCREEN_WIDTH;
+	Background->Bounds.h = SCREEN_HEIGHT;
+	Background->Physics = _Physics(Vector2(0, 0), Vector2(-5, 0), Vector2(0, 0));
+	Backgrounds.push_back(Background);
+	
+	Background = new _Sprite();
+	Background->Texture = BackTexture[0];
+	Background->Bounds.w = SCREEN_WIDTH;
+	Background->Bounds.h = SCREEN_HEIGHT;
+	Background->Physics = _Physics(Vector2(SCREEN_WIDTH, 0), Vector2(-5, 0), Vector2(0, 0));
+	Backgrounds.push_back(Background);
+	
+	Background = new _Sprite();
+	Background->Texture = BackTexture[1];
+	Background->Bounds.w = SCREEN_WIDTH;
+	Background->Bounds.h = 200;
+	Background->Physics = _Physics(Vector2(0, SCREEN_HEIGHT - Background->Bounds.h), Vector2(-30, 0), Vector2(0, 0));
+	Backgrounds.push_back(Background);
+	
+	Background = new _Sprite();
+	Background->Texture = BackTexture[1];
+	Background->Bounds.w = SCREEN_WIDTH;
+	Background->Bounds.h = 200;
+	Background->Physics = _Physics(Vector2(SCREEN_WIDTH, SCREEN_HEIGHT - Background->Bounds.h), Vector2(-30, 0), Vector2(0, 0));
+	Backgrounds.push_back(Background);
+	
+	Background = new _Sprite();
+	Background->Texture = BackTexture[1];
+	Background->Bounds.w = SCREEN_WIDTH;
+	Background->Bounds.h = 100;
+	Background->Physics = _Physics(Vector2(0, SCREEN_HEIGHT - Background->Bounds.h), Vector2(-50, 0), Vector2(0, 0));
+	Backgrounds.push_back(Background);
+	
+	Background = new _Sprite();
+	Background->Texture = BackTexture[1];
+	Background->Bounds.w = SCREEN_WIDTH;
+	Background->Bounds.h = 100;
+	Background->Physics = _Physics(Vector2(SCREEN_WIDTH, SCREEN_HEIGHT - Background->Bounds.h), Vector2(-50, 0), Vector2(0, 0));
+	Backgrounds.push_back(Background);
 }
 
 void CheckCollision() {
 	if(Player->Physics.GetPosition().Y > SCREEN_HEIGHT)
 		Died();
 
-	for(WallsIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
-		_Wall *Wall = *WallsIterator;
+	for(SpriteIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
+		_Sprite *Wall = *WallsIterator;
 		if(CheckWallCollision(Wall)) {
 			Died();
 		}
@@ -280,10 +282,10 @@ void Update(float FrameTime) {
 		case STATE_PLAY: {
 			Time += FrameTime;
 			Player->Update(FrameTime);
-			for(WallsIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ) {
-				_Wall *Wall = *WallsIterator;
+			for(SpriteIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ) {
+				_Sprite *Wall = *WallsIterator;
 				Wall->Update(FrameTime);
-				if(Wall->X + Wall->Sprite.w < 0) {
+				if(Wall->Physics.GetPosition().X + Wall->Bounds.w < 0) {
 					delete Wall;
 					WallsIterator = Walls.erase(WallsIterator);
 				}
@@ -291,7 +293,18 @@ void Update(float FrameTime) {
 					++WallsIterator;
 				}
 			}
-
+			
+			for(SpriteIteratorType BackgroundIterator = Backgrounds.begin(); BackgroundIterator != Backgrounds.end(); ) {
+				_Sprite *Sprite = *BackgroundIterator;
+				Sprite->Update(FrameTime);
+				if(Sprite->Physics.GetPosition().X <= -SCREEN_WIDTH) {
+					Sprite->Physics.SetPosition(Vector2(SCREEN_WIDTH, Sprite->Physics.GetPosition().Y));
+					Sprite->Update(0);
+				}
+				
+				++BackgroundIterator;
+			}
+			
 			CheckCollision();
 
 			SpawnTimer -= FrameTime;
@@ -309,16 +322,10 @@ void Update(float FrameTime) {
 void Render(float Blend) {
 	SDL_RenderClear(Renderer);
 	
-	SDL_Rect Background;
-	Background.w = SCREEN_WIDTH;
-	Background.h = SCREEN_HEIGHT;
-	Background.x = int(-Time * 5) % SCREEN_WIDTH;
-	Background.y = 0;
-	SDL_RenderCopy(Renderer, BackTexture[0], NULL, &Background);
-	
-	Background.x = (int(-Time * 5) % SCREEN_WIDTH) + SCREEN_WIDTH;
-	SDL_RenderCopy(Renderer, BackTexture[0], NULL, &Background);
-
+	for(SpriteIteratorType BackgroundIterator = Backgrounds.begin(); BackgroundIterator != Backgrounds.end(); ++BackgroundIterator) {
+		(*BackgroundIterator)->Render(Renderer, Blend);
+	}
+	/*
 	Background.w = SCREEN_WIDTH;
 	Background.h = 200;
 	Background.x = int(-Time * 30) % SCREEN_WIDTH;
@@ -335,9 +342,9 @@ void Render(float Blend) {
 
 	Background.x = int(-(Time+5) * 50) % SCREEN_WIDTH + SCREEN_WIDTH;
 	SDL_RenderCopy(Renderer, BackTexture[1], NULL, &Background);
-
-	for(WallsIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
-		(*WallsIterator)->Render(Blend);
+*/
+	for(SpriteIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
+		(*WallsIterator)->Render(Renderer, Blend);
 	}
 	Player->Render(Renderer, Blend);
 
@@ -359,19 +366,25 @@ void SpawnWall(float MidY) {
 	float StartY, EndY;
 	StartY = 0;
 	EndY = MidY - SPACING;
-	_Wall *WallTop = new _Wall();
-	WallTop->Init(WallTexture, StartY, WALL_WIDTH, EndY - StartY);
+	_Sprite *WallTop = new _Sprite();
+	WallTop->Texture = WallTexture;
+	WallTop->Physics = _Physics(Vector2(SCREEN_WIDTH, StartY), Vector2(WALL_VELOCITY, 0), Vector2(0, 0));
+	WallTop->Bounds.w = WALL_WIDTH;
+	WallTop->Bounds.h = EndY - StartY;
 	Walls.push_back(WallTop);
 
 	StartY = MidY + SPACING;
 	EndY = SCREEN_HEIGHT;
-	_Wall *WallBottom = new _Wall();
-	WallBottom->Init(WallTexture, StartY, WALL_WIDTH, EndY - StartY);
+	_Sprite *WallBottom = new _Sprite();
+	WallBottom->Texture = WallTexture;
+	WallBottom->Physics = _Physics(Vector2(SCREEN_WIDTH, StartY), Vector2(WALL_VELOCITY, 0), Vector2(0, 0));
+	WallBottom->Bounds.w = WALL_WIDTH;
+	WallBottom->Bounds.h = EndY - StartY;
 	Walls.push_back(WallBottom);
 }
 
-bool CheckWallCollision(_Wall *Wall) {
-	float AABB[4] = { Wall->X, Wall->Y, Wall->X + Wall->Sprite.w, Wall->Y + Wall->Sprite.h };
+bool CheckWallCollision(_Sprite *Wall) {
+	float AABB[4] = { Wall->Physics.GetPosition().X, Wall->Physics.GetPosition().Y, Wall->Physics.GetPosition().X + Wall->Bounds.w, Wall->Physics.GetPosition().Y + Wall->Bounds.h };
 
 	// Get closest point on AABB
 	float X = Player->Physics.GetPosition().X;
@@ -400,10 +413,14 @@ bool CheckWallCollision(_Wall *Wall) {
 
 void DeleteObjects() {
 	delete Player;
-	for(WallsIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
+	for(SpriteIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
 		delete (*WallsIterator);
 	}
-
+	for(SpriteIteratorType BackgroundIterator = Backgrounds.begin(); BackgroundIterator != Backgrounds.end(); ++BackgroundIterator) {
+		delete (*BackgroundIterator);
+	}
+	
+	Backgrounds.clear();
 	Walls.clear();
 }
 
