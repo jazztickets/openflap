@@ -1,2 +1,8 @@
+bin
 build
 *.swp
+codelite/debug
+codelite/release
+codelite/Makefile
+codelite/*.mk
+codelite/.codelite
