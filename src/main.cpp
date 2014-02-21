@@ -38,7 +38,7 @@ const float WALL_VELOCITY = -210.0f;
 const float WALL_WIDTH = 100.0f;
 const float SPACING = 105.0f;
 const float SPAWNTIME = 1.6f;
-const float WALL_BUFFER = 50.0f;
+const float SPAWN_RANGE = 145.0f;
 const SDL_Color ColorWhite = { 255, 255, 255, 255 };
 const SDL_Color ColorRed = { 255, 0, 0, 255 };
 
@@ -342,7 +342,7 @@ void Update(float FrameTime) {
 		
 		SpawnTimer -= FrameTime;
 		if(SpawnTimer <= 0.0f) {
-			SpawnWall(Random.GenerateRange(WALL_BUFFER + SPACING, SCREEN_HEIGHT - (WALL_BUFFER + SPACING)));
+			SpawnWall(Random.GenerateRange(SCREEN_HEIGHT/2 - SPAWN_RANGE, SCREEN_HEIGHT/2 + SPAWN_RANGE));
 			SpawnTimer = SPAWNTIME;
 		}
 		
