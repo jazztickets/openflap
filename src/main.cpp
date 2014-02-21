@@ -199,7 +199,7 @@ int main() {
 
 		float ExtraTime = 1.0f / FPS - FrameTime;
 		if(ExtraTime > 0.0f) {
-			SDL_Delay((Uint32)(ExtraTime * 1000));
+			//SDL_Delay((Uint32)(ExtraTime * 1000));
 		}
 	}
 		
