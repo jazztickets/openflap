@@ -47,6 +47,7 @@ static float HighScore = 0.0f;
 static float Time;
 static float SpawnTimer;
 static float DiedTimer = 0.0f;
+static bool SoundEnabled = true;
 static _Player *Player;
 static SDL_Renderer *Renderer = NULL;
 static SDL_Texture *Texture = NULL;
@@ -69,15 +70,22 @@ int main() {
 	}
 	
 	int MixFlags = MIX_INIT_OGG;
-	int MixInit = Mix_Init(MixFlags);
-	if(MixInit & MixFlags != MixFlags) {
-		std::cout << Mix_GetError() << std::endl;
-		return 1;
-	}
-	
-	if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) < 0) {
-		std::cout << Mix_GetError() << std::endl;
-		return 1;
+	int MixInit;
+
+	if(SoundEnabled) {
+		MixInit = Mix_Init(MixFlags);
+		if(MixInit & MixFlags != MixFlags) {
+			std::cout << Mix_GetError() << std::endl;
+			return 1;
+		}
+		
+		if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) < 0) {
+			std::cout << Mix_GetError() << std::endl;
+			return 1;
+		}
+		
+		SwoopSound = Mix_LoadWAV("swoop.ogg");
+		DieSound = Mix_LoadWAV("die.ogg");
 	}
 	
 	Random.SetSeed(SDL_GetPerformanceCounter());
@@ -103,7 +111,6 @@ int main() {
 		return 1;
 	}
 	
-	SDL_GL_SetSwapInterval(true);
 	Font = TTF_OpenFont("arimo_regular.ttf", 18);
 	if(Font == NULL) {
 		std::cout << SDL_GetError() << std::endl;
@@ -136,9 +143,6 @@ int main() {
 	
 	if(SDL_NumJoysticks() > 0)
 		Joystick = SDL_JoystickOpen(0);
-	
-	SwoopSound = Mix_LoadWAV("swoop.ogg");
-	DieSound = Mix_LoadWAV("die.ogg");
 	
 	InitGame();
 	
@@ -177,7 +181,8 @@ int main() {
 			if(Action) {
 				if(State == STATE_PLAY) {
 					Player->Jump(JUMP_POWER);
-					Mix_PlayChannel(-1, SwoopSound, 0);
+					if(SoundEnabled)
+						Mix_PlayChannel(-1, SwoopSound, 0);
 				}
 				else if(State == STATE_DIED && DiedTimer < 0) {
 					InitGame();
@@ -201,6 +206,8 @@ int main() {
 		if(ExtraTime > 0.0f) {
 			//SDL_Delay((Uint32)(ExtraTime * 1000));
 		}
+		
+		//std::cout << FrameTime << std::endl;
 	}
 		
 	DeleteObjects();
@@ -210,10 +217,12 @@ int main() {
 	SDL_JoystickClose(Joystick);
 	SDL_DestroyRenderer(Renderer);
 	SDL_DestroyWindow(Window);
-	Mix_FreeChunk(DieSound);
-	Mix_FreeChunk(SwoopSound);
-	Mix_CloseAudio();
-	Mix_Quit();
+	if(SoundEnabled) {
+		Mix_FreeChunk(DieSound);
+		Mix_FreeChunk(SwoopSound);
+		Mix_CloseAudio();
+		Mix_Quit();
+	}
 	SDL_Quit();
 	
 	return 0;
