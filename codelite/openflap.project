@@ -31,6 +31,11 @@
     <File Name="../src/sprite.h"/>
     <File Name="../src/types.h"/>
     <File Name="../src/vector2.h"/>
+    <File Name="../src/config.h"/>
+    <File Name="../src/config.cpp"/>
+    <File Name="../src/filesystem.cpp"/>
+    <File Name="../src/filesystem.h"/>
+    <File Name="../src/constants.h"/>
   </VirtualDirectory>
   <Settings Type="Dynamic Library">
     <GlobalSettings>
