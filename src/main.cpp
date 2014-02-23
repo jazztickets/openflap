@@ -48,6 +48,8 @@ static TTF_Font *Font = NULL;
 static SDL_Joystick *Joystick = NULL;
 static Mix_Chunk *DieSound = NULL;
 static Mix_Chunk *SwoopSound = NULL;
+static Mix_Music *Music = NULL;
+static std::string Songs[2] = { "song_crunch.ogg", "song_jazztown.ogg" };
 std::list<_Sprite *> Walls;
 std::list<_Sprite *> Backgrounds;
 typedef std::list<_Sprite *>::iterator SpriteIteratorType;
@@ -61,7 +63,9 @@ int main() {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
-	
+
+	Random.SetSeed(SDL_GetPerformanceCounter());
+
 	if(Config.AudioEnabled) {
 		int MixFlags = MIX_INIT_OGG;
 		int MixInit = Mix_Init(MixFlags);
@@ -77,9 +81,9 @@ int main() {
 		
 		SwoopSound = Mix_LoadWAV("swoop.ogg");
 		DieSound = Mix_LoadWAV("die.ogg");
+		Music = Mix_LoadMUS(Songs[Random.GenerateRange(0, 1)].c_str());
+		Mix_Volume(-1, Config.SoundVolume * MIX_MAX_VOLUME);
 	}
-	
-	Random.SetSeed(SDL_GetPerformanceCounter());
 	
 	if(TTF_Init() != 0) {
 		std::cout << SDL_GetError() << std::endl;
@@ -143,6 +147,12 @@ int main() {
 	
 	InitGame();
 	
+	if(Mix_PlayMusic(Music, -1) == -1) {
+		std::cout << SDL_GetError() << std::endl;
+		return 1;
+	}
+	Mix_VolumeMusic(Config.MusicVolume * MIX_MAX_VOLUME);
+		
 	bool Quit = false;
 	float Timer = SDL_GetPerformanceCounter();
 	float TimeStep = GAME_TIMESTEP;
@@ -217,6 +227,7 @@ int main() {
 	if(Config.AudioEnabled) {
 		Mix_FreeChunk(DieSound);
 		Mix_FreeChunk(SwoopSound);
+		Mix_FreeMusic(Music);
 		Mix_CloseAudio();
 		Mix_Quit();
 	}

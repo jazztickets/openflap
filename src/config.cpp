@@ -37,11 +37,11 @@ void _Config::SetDefaults() {
 	ScreenWidth = DEFAULT_SCREEN_WIDTH;
 	ScreenHeight = DEFAULT_SCREEN_HEIGHT;
 	Fullscreen = DEFAULT_FULLSCREEN;
-	Vsync = 0;
+	Vsync = DEFAULT_VSYNC;
 	AudioEnabled = DEFAULT_AUDIOENABLED;
 	
-	SoundVolume = 1.0f;
-	MusicVolume = 1.0f;
+	SoundVolume = DEFAULT_SOUNDVOLUME;
+	MusicVolume = DEFAULT_MUSICVOLUME;
 }
 
 // Load the config file
