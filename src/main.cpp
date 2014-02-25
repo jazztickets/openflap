@@ -20,8 +20,6 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL_mixer.h>
 #include <iostream>
-#include <iomanip>
-#include <stdexcept>
 #include <sstream>
 #include <list>
 #include <random.h>
@@ -64,11 +62,11 @@ static SDL_Texture *BackTexture[4] = { NULL, NULL, NULL, NULL };
 static TTF_Font *Font = NULL;
 static SDL_Joystick *Joystick = NULL;
 static Mix_Chunk *DieSound = NULL;
-static Mix_Chunk *SwoopSound = NULL;
+static Mix_Chunk *JumpSound = NULL;
 static Mix_Music *Music = NULL;
-static std::string Songs[2] = { "song_crunch.ogg", "song_jazztown.ogg" };
-std::list<_Sprite *> Walls;
-std::list<_Sprite *> Backgrounds;
+static std::string Songs[2] = { "audio/song_crunch.ogg", "audio/song_jazztown.ogg" };
+static std::list<_Sprite *> Walls;
+static std::list<_Sprite *> Backgrounds;
 typedef std::list<_Sprite *>::iterator SpriteIteratorType;
 
 int main() {
@@ -76,13 +74,16 @@ int main() {
 	// Init config system
 	Config.Init("settings.cfg");
 	
+	// Init SDL
 	if(SDL_Init(SDL_INIT_EVERYTHING) == -1) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
 
+	// Set seed for RNG
 	Random.SetSeed(SDL_GetPerformanceCounter());
 
+	// Init audio
 	if(Config.AudioEnabled) {
 		int MixFlags = MIX_INIT_OGG;
 		int MixInit = Mix_Init(MixFlags);
@@ -96,12 +97,13 @@ int main() {
 			return 1;
 		}
 		
-		SwoopSound = Mix_LoadWAV("swoop.ogg");
-		DieSound = Mix_LoadWAV("die.ogg");
+		JumpSound = Mix_LoadWAV("audio/swoop.ogg");
+		DieSound = Mix_LoadWAV("audio/pop.ogg");
 		Music = Mix_LoadMUS(Songs[Random.GenerateRange(0, 1)].c_str());
 		Mix_Volume(-1, Config.SoundVolume * MIX_MAX_VOLUME);
 	}
 	
+	// Init font system
 	if(TTF_Init() != 0) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
@@ -129,58 +131,49 @@ int main() {
 		return 1;
 	}
 	
-	Font = TTF_OpenFont("arimo_regular.ttf", 18);
+	// Load fonts
+	Font = TTF_OpenFont("font/arimo_regular.ttf", 18);
 	if(Font == NULL) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
 
-	Texture = IMG_LoadTexture(Renderer, "player.png");
-	if(Texture == NULL) {
-		std::cout << SDL_GetError() << std::endl;
-		return 1;
-	}
-
-	WallTexture = IMG_LoadTexture(Renderer, "wall.png");
-	if(WallTexture == NULL) {
-		std::cout << SDL_GetError() << std::endl;
-		return 1;
-	}
-	
-	BackTexture[0] = IMG_LoadTexture(Renderer, "back0.png");
-	if(BackTexture[0] == NULL) {
+	// Load textures
+	Texture = IMG_LoadTexture(Renderer, "image/player.png");
+	WallTexture = IMG_LoadTexture(Renderer, "image/wall.png");
+	BackTexture[0] = IMG_LoadTexture(Renderer, "image/back0.png");
+	BackTexture[1] = IMG_LoadTexture(Renderer, "image/back1.png");
+	if(!Texture || !WallTexture || !BackTexture[0] || !BackTexture[1]) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
 	
-	BackTexture[1] = IMG_LoadTexture(Renderer, "back1.png");
-	if(BackTexture[1] == NULL) {
-		std::cout << SDL_GetError() << std::endl;
-		return 1;
-	}
-	
+	// Init joystick
 	if(SDL_NumJoysticks() > 0)
 		Joystick = SDL_JoystickOpen(0);
 	
+	// Init game state
 	InitGame();
 	
+	// Play music
 	if(Mix_PlayMusic(Music, -1) == -1) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
 	Mix_VolumeMusic(Config.MusicVolume * MIX_MAX_VOLUME);
 		
+	// Init main gameloop
 	bool Quit = false;
 	float Timer = SDL_GetPerformanceCounter();
 	float TimeStep = GAME_TIMESTEP;
 	float TimeStepAccumulator = 0.0f;
-	
     while(!Quit) {
 		
 		// Get frametime
 		float FrameTime = (SDL_GetPerformanceCounter() - Timer) / (float)SDL_GetPerformanceFrequency();
 		Timer = SDL_GetPerformanceCounter();
 		
+		// Check for events
 		SDL_Event Event;
 		while(SDL_PollEvent(&Event)) {
 			bool Action = false;
@@ -202,11 +195,12 @@ int main() {
 				break;
 			}
 
+			// Handle player input
 			if(Action) {
 				if(State == STATE_PLAY) {
 					Player->Jump(JUMP_POWER);
 					if(Config.AudioEnabled)
-						Mix_PlayChannel(-1, SwoopSound, 0);
+						Mix_PlayChannel(-1, JumpSound, 0);
 				}
 				else if(State == STATE_DIED && DiedTimer < 0) {
 					InitGame();
@@ -214,18 +208,21 @@ int main() {
 			}
 		}
 		
-		// Game loop
+		// Update timestep accumulator
 		TimeStepAccumulator += FrameTime;
 		if(TimeStepAccumulator > 3.0f)
 			TimeStepAccumulator = 3.0f;
 		
+		// Update game logic
 		while(TimeStepAccumulator >= TimeStep) {
 			Update(TimeStep);
 			TimeStepAccumulator -= TimeStep;
 		}
 
+		// Draw state
 		Render(TimeStepAccumulator * GAME_FPS);
 
+		// Limit framerate
 		float ExtraTime = 1.0f / GAME_FPS - FrameTime;
 		if(ExtraTime > 0.0f) {
 			//SDL_Delay((Uint32)(ExtraTime * 1000));
@@ -233,7 +230,8 @@ int main() {
 		
 		//std::cout << FrameTime << std::endl;
 	}
-		
+	
+	// Clean up
 	DeleteObjects();
 	SDL_DestroyTexture(Texture);
 	SDL_DestroyTexture(WallTexture);
@@ -243,7 +241,7 @@ int main() {
 	SDL_DestroyWindow(Window);
 	if(Config.AudioEnabled) {
 		Mix_FreeChunk(DieSound);
-		Mix_FreeChunk(SwoopSound);
+		Mix_FreeChunk(JumpSound);
 		Mix_FreeMusic(Music);
 		Mix_CloseAudio();
 		Mix_Quit();

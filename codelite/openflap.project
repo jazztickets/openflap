@@ -71,7 +71,7 @@
         <PreprocessFileCommand/>
         <SingleFileCommand/>
         <MakefileGenerationCommand>rm -rf debug; mkdir debug; cd debug &amp;&amp; cmake -DCMAKE_BUILD_TYPE=Debug ../../</MakefileGenerationCommand>
-        <ThirdPartyToolName>Other</ThirdPartyToolName>
+        <ThirdPartyToolName>CMake</ThirdPartyToolName>
         <WorkingDirectory>$(WorkspacePath)/debug</WorkingDirectory>
       </CustomBuild>
       <AdditionalRules>

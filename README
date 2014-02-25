@@ -1,0 +1,26 @@
+openflap
+by Alan Witkowski
+
+https://github.com/jazztickets/openflap
+
+Linux dependencies:
+cmake
+sdl2
+sdl2-mixer
+sdl2-image
+sdl2-ttf
+
+Building:
+mkdir build
+cd build
+cmake ..
+make -j`nproc`
+
+Building in Codelite:
+Open codelite/openflap.workspace with codelite. Right-click the project
+(green folder icon in left sidepane) and select "Run CMake". Then build with F7.
+
+Keys
+Spacebar, mouseclick, or joystick button to jump.
+
+Save data is in ~/.openflap.
