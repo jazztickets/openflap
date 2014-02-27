@@ -109,7 +109,7 @@
         <PreprocessFileCommand/>
         <SingleFileCommand/>
         <MakefileGenerationCommand>rm -rf release; mkdir release; cd release &amp;&amp; cmake -DCMAKE_BUILD_TYPE=Release ../../</MakefileGenerationCommand>
-        <ThirdPartyToolName>Other</ThirdPartyToolName>
+        <ThirdPartyToolName>CMake</ThirdPartyToolName>
         <WorkingDirectory>$(WorkspacePath)/release</WorkingDirectory>
       </CustomBuild>
       <AdditionalRules>
