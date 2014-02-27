@@ -60,3 +60,22 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 	${SDL2_IMAGE_LIBRARIES}
 	${SDL2_MIXER_LIBRARIES}
 )
+
+# install
+if(WIN32)
+else()
+	
+	# linux installation
+	install(TARGETS ${CMAKE_PROJECT_NAME} RUNTIME DESTINATION share/games/${CMAKE_PROJECT_NAME})
+	install(DIRECTORY ${PROJECT_SOURCE_DIR}/working/audio DESTINATION share/games/${CMAKE_PROJECT_NAME})
+	install(DIRECTORY ${PROJECT_SOURCE_DIR}/working/font DESTINATION share/games/${CMAKE_PROJECT_NAME})
+	install(DIRECTORY ${PROJECT_SOURCE_DIR}/working/image DESTINATION share/games/${CMAKE_PROJECT_NAME})
+	install(FILES ${PROJECT_SOURCE_DIR}/deployment/${CMAKE_PROJECT_NAME}.png DESTINATION share/pixmaps)
+	install(FILES ${PROJECT_SOURCE_DIR}/deployment/${CMAKE_PROJECT_NAME}.desktop DESTINATION share/applications)
+	install(FILES ${PROJECT_SOURCE_DIR}/LICENSE DESTINATION share/doc/${CMAKE_PROJECT_NAME})
+	install(FILES ${PROJECT_SOURCE_DIR}/README DESTINATION share/doc/${CMAKE_PROJECT_NAME})
+	
+	# generate the script to launch the program
+	configure_file(${PROJECT_SOURCE_DIR}/deployment/${CMAKE_PROJECT_NAME} ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles)
+	install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${CMAKE_PROJECT_NAME} DESTINATION bin)
+endif()

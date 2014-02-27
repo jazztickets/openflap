@@ -1,0 +1,3 @@
+#!/bin/sh
+cd ${CMAKE_INSTALL_PREFIX}/share/games/openflap
+./openflap $@
