@@ -164,7 +164,7 @@ int main() {
 		
 	// Init main gameloop
 	bool Quit = false;
-	float Timer = SDL_GetPerformanceCounter();
+	Uint64 Timer = SDL_GetPerformanceCounter();
 	float TimeStep = GAME_TIMESTEP;
 	float TimeStepAccumulator = 0.0f;
     while(!Quit) {
