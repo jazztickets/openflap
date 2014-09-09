@@ -1,6 +1,7 @@
 bin
 build
 *.swp
+*.json
 codelite/debug
 codelite/release
 codelite/Makefile
