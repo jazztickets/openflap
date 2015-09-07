@@ -32,14 +32,14 @@ void _Config::Init(const std::string &ConfigFile) {
 	#else
 		ConfigPath = _FileSystem::GetHomePath() + "/.openflap/";
 	#endif
-	
+
 	_FileSystem::CreateDir(ConfigPath.c_str());
-	
+
 	this->ConfigFile = ConfigPath + ConfigFile;
-	
+
 	// Load defaults
 	SetDefaults();
-	
+
 	// Load config
 	Load();
 }
@@ -56,14 +56,14 @@ void _Config::SetDefaults() {
 	Fullscreen = DEFAULT_FULLSCREEN;
 	Vsync = DEFAULT_VSYNC;
 	AudioEnabled = DEFAULT_AUDIOENABLED;
-	
+
 	SoundVolume = DEFAULT_SOUNDVOLUME;
 	MusicVolume = DEFAULT_MUSICVOLUME;
 }
 
 // Load the config file
 void _Config::Load() {
-	
+
 	// Open file
 	std::ifstream In(ConfigFile.c_str());
 	if(!In.is_open()) {
@@ -117,6 +117,6 @@ void _Config::Save() {
 	Out << "audio_enabled=" << AudioEnabled << std::endl;
 	Out << "sound_volume=" << SoundVolume << std::endl;
 	Out << "music_volume=" << MusicVolume << std::endl;
-	
+
 	Out.close();
 }

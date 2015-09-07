@@ -34,7 +34,7 @@ class _Player {
 		void Update(float FrameTime);
 		void Jump(float Power);
 		void Render(SDL_Renderer *Renderer, float Blend);
-	
+
 		float Radius;
 		_Physics Physics;
 		SDL_Rect Sprite;

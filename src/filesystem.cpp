@@ -23,7 +23,7 @@
 	#include <windows.h>
 #else
 	#include <sys/stat.h>
-	#include <dirent.h> 
+	#include <dirent.h>
 #endif
 
 // Create a directory
@@ -46,7 +46,7 @@ std::string _FileSystem::GetHomePath() {
 			Path = Buffer;
 			free(Buffer);
 		}
-	
+
 		return Path;
 	#else
 		return getenv("HOME");
@@ -57,7 +57,7 @@ std::string _FileSystem::GetHomePath() {
 
 // Get a list of files in a directory
 void _FileSystem::GetFiles(const std::string &Path, std::vector<std::string> &Contents) {
-	
+
 	#ifdef _WIN32
 
 		// Get file handle
@@ -80,7 +80,7 @@ void _FileSystem::GetFiles(const std::string &Path, std::vector<std::string> &Co
 		// Close
 		FindClose(FindHandle);
 	#else
-	
+
 		DIR *Directory;
 		struct dirent *Entry;
 		Directory = opendir(Path.c_str());

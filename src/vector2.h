@@ -34,7 +34,7 @@ union Vector2 {
 		Vector2(float X, float Y);
 		Vector2(const float *Data);
 		Vector2(float Degrees);
-		
+
 		// Utility functions
 		void Set(float X, float Y) { this->X = X; this->Y = Y; }
 		void Print() const;
@@ -45,7 +45,7 @@ union Vector2 {
 		Vector2 UnitVector() const;
 		Vector2 RotateVector(float Degrees) const;
 		Vector2 CrossProduct(const Vector2 &Vector) const;
-		
+
 		// Operators
 		Vector2(const Vector2 &Vector);
 		Vector2 &operator=(const Vector2 &Vector);
@@ -63,12 +63,12 @@ union Vector2 {
 		float &operator[](int Index) { return Data[Index]; }
 		float operator[](int Index) const { return Data[Index]; }
 		friend std::ostream &operator<<(std::ostream &Stream, const Vector2 &Vector);
-		
+
 		struct {
 			float X;
 			float Y;
 		};
-		
+
 		float Data[2];
 };
 
@@ -135,7 +135,7 @@ inline Vector2 Vector2::RotateVector(float Degrees) const {
 
 	float Cosine = cos(Degrees / DEGREES_IN_RADIAN);
 	float Sine = sin(Degrees / DEGREES_IN_RADIAN);
-	
+
 	return Vector2(Cosine * X - Sine * Y, Sine * X + Cosine * Y);
 }
 
@@ -149,7 +149,7 @@ inline Vector2::Vector2(const Vector2 &Vector) {
 inline Vector2 &Vector2::operator=(const Vector2 &Vector) {
 	X = Vector.X;
 	Y = Vector.Y;
-	
+
 	return *this;
 }
 
@@ -175,7 +175,7 @@ inline Vector2 Vector2::operator+(const Vector2 &Vector) const {
 inline Vector2 Vector2::operator+=(const Vector2 &Vector) {
 	X = X + Vector.X;
 	Y = Y + Vector.Y;
-	
+
 	return *this;
 }
 
@@ -189,7 +189,7 @@ inline Vector2 Vector2::operator-(const Vector2 &Vector) const {
 inline Vector2 Vector2::operator-=(const Vector2 &Vector) {
 	X = X - Vector.X;
 	Y = Y - Vector.Y;
-	
+
 	return *this;
 }
 
@@ -208,7 +208,7 @@ inline Vector2 Vector2::operator*(const float &Value) const {
 inline Vector2 Vector2::operator*=(const float &Value) {
 	X = X * Value;
 	Y = Y * Value;
-	
+
 	return *this;
 }
 
@@ -221,13 +221,13 @@ inline Vector2 Vector2::operator/(const float &Value) const {
 inline Vector2 Vector2::operator/=(const float &Value) {
 	X = X / Value;
 	Y = Y / Value;
-	
+
 	return *this;
 }
 
 // Stream operator
 inline std::ostream &operator<<(std::ostream &Stream, const Vector2 &Vector) {
 	Stream << " X=" << std::setw(13) << Vector.X << " Y=" << std::setw(13) << Vector.Y;
-	
+
 	return Stream;
 }

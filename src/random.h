@@ -17,32 +17,32 @@
 *******************************************************************************/
 #pragma once
 
-#include <types.h>
+#include <stdint.h>
 
 class _Random {
 
 	public:
-	
+
 		_Random();
-		_Random(u32 Seed);
-		
+		_Random(uint32_t Seed);
+
 		// Set initial seed
-		void SetSeed(u32 Seed);
-		
+		void SetSeed(uint32_t Seed);
+
 		// Random functions
 		double Generate();
-		u32 Generate(u32 Count);
+		uint32_t Generate(uint32_t Count);
 		int GenerateRange(int Min, int Max);
-		u32 GenerateRange(u32 Min, u32 Max);
+		uint32_t GenerateRange(uint32_t Min, uint32_t Max);
 		double GenerateRange(double Min, double Max);
-		
+
 	private:
-	
+
 		// Base function
-		u32 GenerateRandomInteger();
-		
+		uint32_t GenerateRandomInteger();
+
 		// Seeds
-		u32 Q[1024];
+		uint32_t Q[1024];
 };
 
 // Constructor
@@ -52,15 +52,15 @@ inline _Random::_Random() {
 }
 
 // Constructor
-inline _Random::_Random(u32 Seed) {
+inline _Random::_Random(uint32_t Seed) {
 
 	SetSeed(Seed);
 }
 
 // Sets the seed for the generator
-inline void _Random::SetSeed(u32 Seed) {
+inline void _Random::SetSeed(uint32_t Seed) {
 
-	for(u32 i = 0; i < 1024; i++) {
+	for(uint32_t i = 0; i < 1024; i++) {
 		Seed ^= Seed << 13;
 		Seed ^= Seed >> 17;
 		Seed ^= Seed << 5;
@@ -69,20 +69,20 @@ inline void _Random::SetSeed(u32 Seed) {
 }
 
 // Generates a random integer
-inline u32 _Random::GenerateRandomInteger() {
-	static u32 c = 8471623, i = 1023;
-	u64 t, a = 123471786LL;
-	u32 x, r = 0xfffffffe;
-	
+inline uint32_t _Random::GenerateRandomInteger() {
+	static uint32_t c = 8471623, i = 1023;
+	uint64_t t, a = 123471786LL;
+	uint32_t x, r = 0xfffffffe;
+
 	i = (i + 1) & 1023;
 	t = a * Q[i] + c;
 	c = t >> 32;
-	x = (u32)(t + c);
+	x = (uint32_t)(t + c);
 	if(x < c) {
 		x++;
 		c++;
 	}
-	
+
 	return Q[i] = r - x;
 }
 
@@ -93,9 +93,9 @@ inline double _Random::Generate() {
 }
 
 // Generates a random number [0, Count-1]
-inline u32 _Random::Generate(u32 Count) {
+inline uint32_t _Random::Generate(uint32_t Count) {
 
-	return (u32)(Generate() * Count);
+	return (uint32_t)(Generate() * Count);
 }
 
 // Generates a random number [Min, Max]
@@ -105,9 +105,9 @@ inline int _Random::GenerateRange(int Min, int Max) {
 }
 
 // Generates a random number [Min, Max]
-inline u32 _Random::GenerateRange(u32 Min, u32 Max) {
+inline uint32_t _Random::GenerateRange(uint32_t Min, uint32_t Max) {
 
-	return (u32)(Generate() * (Max - Min + 1)) + Min;
+	return (uint32_t)(Generate() * (Max - Min + 1)) + Min;
 }
 
 // Generates a random number [Min, Max]

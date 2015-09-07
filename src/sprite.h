@@ -32,7 +32,7 @@ class _Sprite {
 
 		void Update(float FrameTime);
 		void Render(SDL_Renderer *Renderer, float Blend);
-	
+
 		float Radius;
 		_Physics Physics;
 		SDL_Rect Bounds;
