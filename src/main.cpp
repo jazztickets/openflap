@@ -22,7 +22,6 @@
 #include <iostream>
 #include <sstream>
 #include <list>
-#include <random.h>
 #include <vector2.h>
 #include <physics.h>
 #include <player.h>
@@ -53,7 +52,8 @@ static float HighScore = 0.0f;
 static float Time;
 static float SpawnTimer;
 static float DiedTimer = 0.0f;
-static _Player *Player;
+static uint32_t Seed = 0;
+static _Player *Player = NULL;
 static SDL_Renderer *Renderer = NULL;
 static SDL_Texture *Texture = NULL;
 static SDL_Texture *WallTexture = NULL;
@@ -69,7 +69,18 @@ static std::list<_Sprite *> Walls;
 static std::list<_Sprite *> Backgrounds;
 typedef std::list<_Sprite *>::iterator SpriteIteratorType;
 
-int main() {
+int GetRandomNumber(int Numbers) { return rand() / (RAND_MAX / Numbers + 1); }
+
+int main(int ArgumentCount, char **Arguments) {
+
+	// Get seed from arguments
+	if(ArgumentCount == 2)
+		Seed = atoi(Arguments[1]);
+	else
+		Seed = time(NULL);
+
+	// Set seed
+	srand(Seed);
 
 	// Init config system
 	Config.Init("settings.cfg");
@@ -79,9 +90,6 @@ int main() {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
-
-	// Set seed for RNG
-	Random.SetSeed(SDL_GetPerformanceCounter());
 
 	// Init audio
 	if(Config.AudioEnabled) {
@@ -99,7 +107,7 @@ int main() {
 
 		JumpSound = Mix_LoadWAV("audio/swoop.ogg");
 		DieSound = Mix_LoadWAV("audio/pop.ogg");
-		Music = Mix_LoadMUS(Songs[Random.GenerateRange(0, 1)].c_str());
+		Music = Mix_LoadMUS(Songs[GetRandomNumber(2)].c_str());
 		Mix_Volume(-1, Config.SoundVolume * MIX_MAX_VOLUME);
 	}
 
@@ -362,12 +370,14 @@ void Update(float FrameTime) {
 		++BackgroundIterator;
 	}
 
-
 	if(State == STATE_PLAY) {
 
 		SpawnTimer -= FrameTime;
 		if(SpawnTimer <= 0.0f) {
-			SpawnWall(Random.GenerateRange(Config.ScreenHeight/2 - SPAWN_RANGE, Config.ScreenHeight/2 + SPAWN_RANGE));
+			float Low = Config.ScreenHeight/2 - SPAWN_RANGE;
+			float High = Config.ScreenHeight/2 + SPAWN_RANGE;
+			float Y = Low + rand() / (RAND_MAX / (High - Low + 1) + 1);
+			SpawnWall(Y);
 			SpawnTimer = SPAWNTIME;
 		}
 
@@ -389,6 +399,7 @@ void Render(float Blend) {
 	}
 	Player->Render(Renderer, Blend);
 
+	// Draw HUD
 	std::ostringstream Buffer;
 	Buffer << std::fixed << std::setprecision(2) << "Time: " << Time;
 	DrawText(Buffer.str(), Config.ScreenWidth - 160, 15, ColorWhite);
@@ -396,6 +407,10 @@ void Render(float Blend) {
 	Buffer.str("");
 	Buffer << std::fixed << std::setprecision(2) << "High Score: " << HighScore;
 	DrawText(Buffer.str(), Config.ScreenWidth - 160, 35, ColorWhite);
+
+	Buffer.str("");
+	Buffer << std::fixed << std::setprecision(2) << "Seed: " << Seed;
+	DrawText(Buffer.str(), Config.ScreenWidth - 160, 55, ColorWhite);
 
 	if(State == STATE_DIED)
 		DrawText("You Died!", 10, 10, ColorRed);

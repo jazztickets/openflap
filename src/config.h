@@ -20,6 +20,7 @@
 // Libraries
 #include <stdint.h>
 #include <string>
+#include <sstream>
 #include <map>
 
 // Load/save config file

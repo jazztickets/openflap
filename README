@@ -16,11 +16,10 @@ cd build
 cmake ..
 make -j`nproc`
 
-Building in Codelite:
-Open codelite/openflap.workspace with codelite. Right-click the project
-(green folder icon in left sidepane) and select "Run CMake". Then build with F7.
-
 Keys
 Spacebar, mouseclick, or joystick button to jump.
 
-Save data is in ~/.openflap.
+Save data is in ~/.local/share/openflap
+
+Set random number seed:
+openflap [32-bit integer]

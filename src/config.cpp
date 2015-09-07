@@ -16,10 +16,10 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *******************************************************************************/
 #include <config.h>
-#include <filesystem.h>
 #include <constants.h>
 #include <sstream>
 #include <fstream>
+#include <SDL_filesystem.h>
 
 // Globals
 _Config Config;
@@ -27,13 +27,15 @@ _Config Config;
 // Initializes the config system
 void _Config::Init(const std::string &ConfigFile) {
 
-	#ifdef _WIN32
-		ConfigPath = _FileSystem::GetHomePath() + "\\openflap\\";
-	#else
-		ConfigPath = _FileSystem::GetHomePath() + "/.openflap/";
-	#endif
-
-	_FileSystem::CreateDir(ConfigPath.c_str());
+	// Create config path
+	char *PrefPath = SDL_GetPrefPath("", "openflap");
+	if(PrefPath) {
+		ConfigPath = PrefPath;
+		SDL_free(PrefPath);
+	}
+	else {
+		throw std::runtime_error("Cannot create config path!");
+	}
 
 	this->ConfigFile = ConfigPath + ConfigFile;
 
