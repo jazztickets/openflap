@@ -41,8 +41,13 @@ include_directories("src/")
 file(GLOB SRC_MAIN src/*.cpp src/*.h)
 add_executable(${PROJECT_NAME} ${SRC_MAIN})
 
+# mingw and visual studio
+if(WIN32)
+	set(EXTRA_LIBS ${EXTRA_LIBS} ${SDL2MAIN_LIBRARY})
+endif()
+
 target_link_libraries(${CMAKE_PROJECT_NAME}
-	${SDL2MAIN_LIBRARY}
+	${EXTRA_LIBS}
 	${SDL2_LIBRARY}
 	${SDL2_TTF_LIBRARIES}
 	${SDL2_IMAGE_LIBRARIES}
