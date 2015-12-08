@@ -15,10 +15,10 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *******************************************************************************/
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
-#include <SDL2/SDL_ttf.h>
-#include <SDL2/SDL_mixer.h>
+#include <SDL.h>
+#include <SDL_image.h>
+#include <SDL_ttf.h>
+#include <SDL_mixer.h>
 #include <iostream>
 #include <sstream>
 #include <list>
@@ -28,6 +28,7 @@
 #include <sprite.h>
 #include <config.h>
 #include <constants.h>
+#include <ctime>
 
 enum GameState {
 	STATE_PLAY,
@@ -81,6 +82,7 @@ int main(int ArgumentCount, char **Arguments) {
 
 	// Set seed
 	srand(Seed);
+	rand();
 
 	// Init config system
 	Config.Init("settings.cfg");

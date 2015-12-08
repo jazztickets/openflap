@@ -14,7 +14,7 @@ if(MSVC)
 	# set output path
 	set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin/)
 	add_definitions("-D_CRT_SECURE_NO_WARNINGS")
-elseif(UNIX)
+else()
 	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -H")
 	
 	# set default build type
@@ -42,6 +42,7 @@ file(GLOB SRC_MAIN src/*.cpp src/*.h)
 add_executable(${PROJECT_NAME} ${SRC_MAIN})
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
+	${SDL2MAIN_LIBRARY}
 	${SDL2_LIBRARY}
 	${SDL2_TTF_LIBRARIES}
 	${SDL2_IMAGE_LIBRARIES}
