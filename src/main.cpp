@@ -29,6 +29,7 @@
 #include <config.h>
 #include <constants.h>
 #include <ctime>
+#include <random>
 
 enum GameState {
 	STATE_PLAY,
@@ -44,6 +45,9 @@ void Render(float Blend);
 void DeleteObjects();
 void DrawText(const std::string &Text, int X, int Y, const SDL_Color &Color);
 bool CheckWallCollision(_Sprite *Wall);
+void GetNewSeed(bool Print=false);
+int GetRandomInt(int Min, int Max);
+double GetRandomReal(double Min, double Max);
 
 const SDL_Color ColorWhite = { 255, 255, 255, 255 };
 const SDL_Color ColorRed = { 255, 0, 0, 255 };
@@ -53,36 +57,26 @@ static float HighScore = 0.0f;
 static float Time;
 static float SpawnTimer;
 static float DiedTimer = 0.0f;
+static std::mt19937 RandomGenerator;
+static bool StaticSeed = false;
 static uint32_t Seed = 0;
-static _Player *Player = NULL;
-static SDL_Renderer *Renderer = NULL;
-static SDL_Texture *Texture = NULL;
-static SDL_Texture *WallTexture = NULL;
-static SDL_Texture *TextTexture = NULL;
-static SDL_Texture *BackTexture[4] = { NULL, NULL, NULL, NULL };
-static TTF_Font *Font = NULL;
-static SDL_Joystick *Joystick = NULL;
-static Mix_Chunk *DieSound = NULL;
-static Mix_Chunk *JumpSound = NULL;
-static Mix_Music *Music = NULL;
+static _Player *Player = nullptr;
+static SDL_Renderer *Renderer = nullptr;
+static SDL_Texture *Texture = nullptr;
+static SDL_Texture *WallTexture = nullptr;
+static SDL_Texture *TextTexture = nullptr;
+static SDL_Texture *BackTexture[4] = { nullptr, nullptr, nullptr, nullptr };
+static TTF_Font *Font = nullptr;
+static SDL_Joystick *Joystick = nullptr;
+static Mix_Chunk *DieSound = nullptr;
+static Mix_Chunk *JumpSound = nullptr;
+static Mix_Music *Music = nullptr;
 static std::string Songs[2] = { "audio/song_crunch.ogg", "audio/song_jazztown.ogg" };
 static std::list<_Sprite *> Walls;
 static std::list<_Sprite *> Backgrounds;
 typedef std::list<_Sprite *>::iterator SpriteIteratorType;
 
-int GetRandomNumber(int Numbers) { return rand() / (RAND_MAX / Numbers + 1); }
-
 int main(int ArgumentCount, char **Arguments) {
-
-	// Get seed from arguments
-	if(ArgumentCount == 2)
-		Seed = atoi(Arguments[1]);
-	else
-		Seed = time(NULL);
-
-	// Set seed
-	srand(Seed);
-	rand();
 
 	// Init config system
 	Config.Init("settings.cfg");
@@ -92,6 +86,15 @@ int main(int ArgumentCount, char **Arguments) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
+
+	// Get seed from arguments
+	if(ArgumentCount == 2) {
+		Seed = (uint32_t)atoi(Arguments[1]);
+		StaticSeed = true;
+	}
+
+	// Set seed
+	GetNewSeed();
 
 	// Init audio
 	if(Config.AudioEnabled) {
@@ -109,8 +112,8 @@ int main(int ArgumentCount, char **Arguments) {
 
 		JumpSound = Mix_LoadWAV("audio/swoop.ogg");
 		DieSound = Mix_LoadWAV("audio/pop.ogg");
-		Music = Mix_LoadMUS(Songs[GetRandomNumber(2)].c_str());
-		Mix_Volume(-1, Config.SoundVolume * MIX_MAX_VOLUME);
+		Music = Mix_LoadMUS(Songs[GetRandomInt(0, 1)].c_str());
+		Mix_Volume(-1, (int)(Config.SoundVolume * MIX_MAX_VOLUME));
 	}
 
 	// Init font system
@@ -120,7 +123,7 @@ int main(int ArgumentCount, char **Arguments) {
 	}
 
 	// Set up window
-	SDL_Window *Window = NULL;
+	SDL_Window *Window = nullptr;
 	Uint32 Flags = SDL_WINDOW_SHOWN;
 	if(Config.Fullscreen)
 		Flags |= SDL_WINDOW_FULLSCREEN | SDL_WINDOW_INPUT_GRABBED;
@@ -136,14 +139,14 @@ int main(int ArgumentCount, char **Arguments) {
 	if(Config.Vsync)
 		Flags |= SDL_RENDERER_PRESENTVSYNC;
 	Renderer = SDL_CreateRenderer(Window, -1, Flags);
-	if(Renderer == NULL) {
+	if(Renderer == nullptr) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
 
 	// Load fonts
 	Font = TTF_OpenFont("font/arimo_regular.ttf", 18);
-	if(Font == NULL) {
+	if(Font == nullptr) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
@@ -170,7 +173,7 @@ int main(int ArgumentCount, char **Arguments) {
 		std::cout << SDL_GetError() << std::endl;
 		return 1;
 	}
-	Mix_VolumeMusic(Config.MusicVolume * MIX_MAX_VOLUME);
+	Mix_VolumeMusic((int)(Config.MusicVolume * MIX_MAX_VOLUME));
 
 	// Init main gameloop
 	bool Quit = false;
@@ -230,15 +233,15 @@ int main(int ArgumentCount, char **Arguments) {
 		}
 
 		// Draw state
-		Render(TimeStepAccumulator * GAME_FPS);
+		Render(TimeStepAccumulator / TimeStep);
 
 		// Limit framerate
-		float ExtraTime = 1.0f / GAME_FPS - FrameTime;
-		if(ExtraTime > 0.0f) {
-			//SDL_Delay((Uint32)(ExtraTime * 1000));
+		if(!Config.Vsync) {
+			float ExtraTime = 1.0f / GAME_MAXFPS - FrameTime;
+			if(ExtraTime > 0.0f) {
+				SDL_Delay((Uint32)(ExtraTime * 1000));
+			}
 		}
-
-		//std::cout << FrameTime << std::endl;
 	}
 
 	// Clean up
@@ -263,6 +266,7 @@ int main(int ArgumentCount, char **Arguments) {
 	return 0;
 }
 
+// Player has died
 void Died() {
 	Mix_PlayChannel(-1, DieSound, 0);
 
@@ -277,11 +281,15 @@ void Died() {
 
 	State = STATE_DIED;
 	DiedTimer = DIED_WAIT_TIME;
+
+	std::cout << "Score=" << Time << " Seed=" << Seed << std::endl;
 }
 
+// Initialize game state
 void InitGame() {
+	GetNewSeed(true);
 	State = STATE_PLAY;
-	TextTexture = NULL;
+	TextTexture = nullptr;
 	DeleteObjects();
 	Player = new _Player(_Physics(Vector2(100, 0), Vector2(0, 0), Vector2(0, GRAVITY)));
 	Player->Init(Texture);
@@ -332,6 +340,7 @@ void InitGame() {
 	Backgrounds.push_back(Background);
 }
 
+// Check collisions between player and world
 void CheckCollision() {
 	if(Player->Physics.GetPosition().Y > Config.ScreenHeight + Player->Radius)
 		Died();
@@ -344,11 +353,15 @@ void CheckCollision() {
 	}
 }
 
+// Update game
 void Update(float FrameTime) {
 	if(State == STATE_PLAY)
 		Time += FrameTime;
 
+	// Update player
 	Player->Update(FrameTime);
+
+	// Update walls
 	for(SpriteIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ) {
 		_Sprite *Wall = *WallsIterator;
 		Wall->Update(FrameTime);
@@ -361,6 +374,7 @@ void Update(float FrameTime) {
 		}
 	}
 
+	// Update backgrounds
 	for(SpriteIteratorType BackgroundIterator = Backgrounds.begin(); BackgroundIterator != Backgrounds.end(); ) {
 		_Sprite *Sprite = *BackgroundIterator;
 		Sprite->Update(FrameTime);
@@ -374,34 +388,43 @@ void Update(float FrameTime) {
 
 	if(State == STATE_PLAY) {
 
+		// Spawn new walls
 		SpawnTimer -= FrameTime;
 		if(SpawnTimer <= 0.0f) {
 			float Low = Config.ScreenHeight/2 - SPAWN_RANGE;
 			float High = Config.ScreenHeight/2 + SPAWN_RANGE;
-			float Y = Low + rand() / (RAND_MAX / (High - Low + 1) + 1);
+			float Y = (float)GetRandomReal(Low, High);
 			SpawnWall(Y);
 			SpawnTimer = SPAWNTIME;
 		}
 
+		// Check collisions
 		CheckCollision();
 	}
 	else
 		DiedTimer -= FrameTime;
 }
 
+// Draw objects
 void Render(float Blend) {
+
+	// Clear screen
 	SDL_RenderClear(Renderer);
 
+	// Draw backgrounds
 	for(SpriteIteratorType BackgroundIterator = Backgrounds.begin(); BackgroundIterator != Backgrounds.end(); ++BackgroundIterator) {
 		(*BackgroundIterator)->Render(Renderer, Blend);
 	}
 
+	// Draw walls
 	for(SpriteIteratorType WallsIterator = Walls.begin(); WallsIterator != Walls.end(); ++WallsIterator) {
 		(*WallsIterator)->Render(Renderer, Blend);
 	}
+
+	// Draw player
 	Player->Render(Renderer, Blend);
 
-	// Draw HUD
+	// Draw stats
 	std::ostringstream Buffer;
 	Buffer << std::fixed << std::setprecision(2) << "Time: " << Time;
 	DrawText(Buffer.str(), Config.ScreenWidth - 160, 15, ColorWhite);
@@ -414,12 +437,15 @@ void Render(float Blend) {
 	Buffer << std::fixed << std::setprecision(2) << "Seed: " << Seed;
 	DrawText(Buffer.str(), Config.ScreenWidth - 160, 55, ColorWhite);
 
+	// Draw death message
 	if(State == STATE_DIED)
 		DrawText("You Died!", 10, 10, ColorRed);
 
+	// Render to screen
 	SDL_RenderPresent(Renderer);
 }
 
+// Create wall object
 void SpawnWall(float MidY) {
 	float StartY, EndY;
 	StartY = 0;
@@ -427,8 +453,8 @@ void SpawnWall(float MidY) {
 	_Sprite *WallTop = new _Sprite();
 	WallTop->Texture = WallTexture;
 	WallTop->Physics = _Physics(Vector2(Config.ScreenWidth, StartY), Vector2(WALL_VELOCITY, 0), Vector2(0, 0));
-	WallTop->Bounds.w = WALL_WIDTH;
-	WallTop->Bounds.h = EndY - StartY;
+	WallTop->Bounds.w = (int)WALL_WIDTH;
+	WallTop->Bounds.h = (int)(EndY - StartY);
 	Walls.push_back(WallTop);
 
 	StartY = MidY + SPACING;
@@ -436,11 +462,12 @@ void SpawnWall(float MidY) {
 	_Sprite *WallBottom = new _Sprite();
 	WallBottom->Texture = WallTexture;
 	WallBottom->Physics = _Physics(Vector2(Config.ScreenWidth, StartY), Vector2(WALL_VELOCITY, 0), Vector2(0, 0));
-	WallBottom->Bounds.w = WALL_WIDTH;
-	WallBottom->Bounds.h = EndY - StartY;
+	WallBottom->Bounds.w = (int)WALL_WIDTH;
+	WallBottom->Bounds.h = (int)(EndY - StartY);
 	Walls.push_back(WallBottom);
 }
 
+// Test collision between box and circle
 bool CheckWallCollision(_Sprite *Wall) {
 	float AABB[4] = { Wall->Physics.GetPosition().X, Wall->Physics.GetPosition().Y, Wall->Physics.GetPosition().X + Wall->Bounds.w, Wall->Physics.GetPosition().Y + Wall->Bounds.h };
 
@@ -465,6 +492,7 @@ bool CheckWallCollision(_Sprite *Wall) {
 	return Hit;
 }
 
+// Delete object data
 void DeleteObjects() {
 
 	delete Player;
@@ -479,6 +507,7 @@ void DeleteObjects() {
 	Walls.clear();
 }
 
+// Render text
 void DrawText(const std::string &Text, int X, int Y, const SDL_Color &Color) {
 	SDL_Rect Bounds;
 	Bounds.x = X;
@@ -488,7 +517,28 @@ void DrawText(const std::string &Text, int X, int Y, const SDL_Color &Color) {
 
 	SDL_Surface *TextSurface = TTF_RenderText_Blended(Font, Text.c_str(), Color);
 	TextTexture = SDL_CreateTextureFromSurface(Renderer, TextSurface);
-	SDL_QueryTexture(TextTexture, NULL, NULL, &Bounds.w, &Bounds.h);
-	SDL_RenderCopy(Renderer, TextTexture, NULL, &Bounds);
+	SDL_QueryTexture(TextTexture, nullptr, nullptr, &Bounds.w, &Bounds.h);
+	SDL_RenderCopy(Renderer, TextTexture, nullptr, &Bounds);
 	SDL_FreeSurface(TextSurface);
+}
+
+// Set seed
+void GetNewSeed(bool Print) {
+	if(!StaticSeed) {
+		Seed = (uint32_t)SDL_GetPerformanceCounter();
+	}
+
+	RandomGenerator.seed(Seed);
+}
+
+// Return random int from Min to Max
+int GetRandomInt(int Min, int Max) {
+	std::uniform_int_distribution<int> Distribution(Min, Max);
+	return Distribution(RandomGenerator);
+}
+
+// Return random double from Min to Max
+double GetRandomReal(double Min, double Max) {
+	std::uniform_real_distribution<double> Distribution(Min, Max);
+	return Distribution(RandomGenerator);
 }

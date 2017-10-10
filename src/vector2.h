@@ -23,7 +23,7 @@
 #include <cmath>
 
 // Constants
-const float DEGREES_IN_RADIAN 	= 180.0f / M_PI;
+const float DEGREES_IN_RADIAN = 180.0f / (float)M_PI;
 
 // Classes
 union Vector2 {
@@ -93,8 +93,8 @@ inline Vector2::Vector2(const float *Data) {
 // Creates a vector from a given degree
 inline Vector2::Vector2(float Degrees) {
 	Degrees -= 90.0f;
-	X = cos(Degrees / DEGREES_IN_RADIAN);
-	Y = sin(Degrees / DEGREES_IN_RADIAN);
+	X = cosf(Degrees / DEGREES_IN_RADIAN);
+	Y = sinf(Degrees / DEGREES_IN_RADIAN);
 }
 
 // Outputs the vector to stdout
@@ -117,7 +117,7 @@ inline void Vector2::Normalize() {
 
 // Calculates the magnitude of the vector
 inline float Vector2::Magnitude() const {
-	return sqrt(X * X + Y * Y);
+	return sqrtf(X * X + Y * Y);
 }
 
 // Calculates the squared magnitude of the vector
@@ -133,8 +133,8 @@ inline Vector2 Vector2::UnitVector() const {
 // Rotates a vector
 inline Vector2 Vector2::RotateVector(float Degrees) const {
 
-	float Cosine = cos(Degrees / DEGREES_IN_RADIAN);
-	float Sine = sin(Degrees / DEGREES_IN_RADIAN);
+	float Cosine = cosf(Degrees / DEGREES_IN_RADIAN);
+	float Sine = sinf(Degrees / DEGREES_IN_RADIAN);
 
 	return Vector2(Cosine * X - Sine * Y, Sine * X + Cosine * Y);
 }

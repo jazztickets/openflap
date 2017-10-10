@@ -33,7 +33,7 @@ const  float        DEFAULT_MUSICVOLUME            = 0.8f;
 //     Game
 const  std::string  GAME_WINDOWTITLE               = "openflap";
 const  float        GAME_FPS                       = 100.0f;
-const  uint32_t     GAME_SLEEP_RATE                = (uint32_t)(1000/(GAME_FPS));
+const  float        GAME_MAXFPS                    = 300.0f;
 const  float        GAME_TIMESTEP                  = 1.0f/GAME_FPS;
 
 const  float        JUMP_POWER                     = -670.0f;

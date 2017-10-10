@@ -27,7 +27,7 @@ class _Player {
 
 	public:
 
-		_Player(const _Physics &Physics) : Texture(NULL), Physics(Physics) { }
+		_Player(const _Physics &Physics) : Physics(Physics), Texture(nullptr) { }
 		~_Player() { }
 
 		void Init(SDL_Texture *Texture);

@@ -1,3 +1,14 @@
-bin
-build*
+*.dll
 *.swp
+*.~lock*
+*.zip
+CMakeLists.txt.user
+bin/
+build/
+src/tags
+src/version.h
+deployment/*.exe
+deployment/*-src
+deployment/*.tar.gz
+deployment/out
+TODO

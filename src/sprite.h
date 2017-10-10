@@ -27,7 +27,7 @@ class _Sprite {
 
 	public:
 
-		_Sprite() : Texture(NULL) { }
+		_Sprite() : Texture(nullptr) { }
 		~_Sprite() { }
 
 		void Update(float FrameTime);
