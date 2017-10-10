@@ -1,25 +1,36 @@
 openflap
 by Alan Witkowski
-
 https://github.com/jazztickets/openflap
 
-Linux dependencies:
-cmake
-sdl2
-sdl2-mixer
-sdl2-image
-sdl2-ttf
+----- HOW TO PLAY -----
 
-Building:
+Use spacebar, mouseclick, or joystick button to jump.
+
+----- BUILDING -----
+
+-- Dependencies --
+CMake 2.8+
+SDL2
+SDL2_image
+SDL2_mixer
+SDL2_ttf
+
+-- Building and running --
 mkdir build
 cd build
 cmake ..
 make -j`nproc`
+cd ../working && ../bin/Release/openflap
 
-Keys
-Spacebar, mouseclick, or joystick button to jump.
+-- Installing --
+run "sudo make install" from the build directory.
+
+-- Uninstall --
+cat install_manifest.txt | xargs sudo rm
 
 Save data is in ~/.local/share/openflap
+
+----- COMMAND-LINE ARGUMENTS -----
 
 Set random number seed:
 openflap [32-bit integer]

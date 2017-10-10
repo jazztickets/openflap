@@ -23,7 +23,7 @@
 #include <cmath>
 
 // Constants
-const float DEGREES_IN_RADIAN = 180.0f / (float)M_PI;
+const float DEGREES_IN_RADIAN = 180.0f / 3.14159265358979323846264338f;
 
 // Classes
 union Vector2 {

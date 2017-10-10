@@ -28,6 +28,7 @@
 #include <sprite.h>
 #include <config.h>
 #include <constants.h>
+#include <version.h>
 #include <ctime>
 #include <random>
 
@@ -52,6 +53,7 @@ double GetRandomReal(double Min, double Max);
 const SDL_Color ColorWhite = { 255, 255, 255, 255 };
 const SDL_Color ColorRed = { 255, 0, 0, 255 };
 
+static std::string Version = GAME_VERSION;
 static GameState State;
 static float HighScore = 0.0f;
 static float Time;
@@ -77,6 +79,10 @@ static std::list<_Sprite *> Backgrounds;
 typedef std::list<_Sprite *>::iterator SpriteIteratorType;
 
 int main(int ArgumentCount, char **Arguments) {
+
+	// Get version;
+	if(GAME_BUILD)
+		Version += "r" + std::to_string(GAME_BUILD);
 
 	// Init config system
 	Config.Init("settings.cfg");
@@ -426,16 +432,22 @@ void Render(float Blend) {
 
 	// Draw stats
 	std::ostringstream Buffer;
-	Buffer << std::fixed << std::setprecision(2) << "Time: " << Time;
+
+	Buffer << std::fixed << "Version: " << Version;
 	DrawText(Buffer.str(), Config.ScreenWidth - 160, 15, ColorWhite);
-
 	Buffer.str("");
-	Buffer << std::fixed << std::setprecision(2) << "High Score: " << HighScore;
+
+	Buffer << std::fixed << "Seed: " << Seed;
 	DrawText(Buffer.str(), Config.ScreenWidth - 160, 35, ColorWhite);
-
 	Buffer.str("");
-	Buffer << std::fixed << std::setprecision(2) << "Seed: " << Seed;
-	DrawText(Buffer.str(), Config.ScreenWidth - 160, 55, ColorWhite);
+
+	Buffer << std::fixed << std::setprecision(2) << "Time: " << Time;
+	DrawText(Buffer.str(), Config.ScreenWidth - 160, 75, ColorWhite);
+	Buffer.str("");
+
+	Buffer << std::fixed << std::setprecision(2) << "High Score: " << HighScore;
+	DrawText(Buffer.str(), Config.ScreenWidth - 160, 95, ColorWhite);
+	Buffer.str("");
 
 	// Draw death message
 	if(State == STATE_DIED)
