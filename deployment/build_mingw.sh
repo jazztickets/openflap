@@ -49,8 +49,11 @@ build() {
 	echo "openflap.exe 123" > working/static_seed.bat
 	chmod +x working/*.bat
 
-	archive=openflap-${version}r${gitver}-win${bits}.zip
-	zip -r $archive working
+	final_name=openflap-${version}r${gitver}-win${bits}
+	archive=$final_name.zip
+	ln -s working "${final_name}"
+	zip -r $archive "${final_name}"
+	rm "${final_name}"
 
 	rm working/openflap.exe
 	rm working/*.dll
