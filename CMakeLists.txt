@@ -10,13 +10,15 @@ project(openflap)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
 
 # add custom target to generate version.h
-add_custom_target(
-	version
-	${CMAKE_COMMAND}
-	-D SRC=${PROJECT_SOURCE_DIR}/cmake/version.h.in
-	-D DST=${PROJECT_SOURCE_DIR}/src/version.h
-	-P ${PROJECT_SOURCE_DIR}/cmake/version.cmake
-)
+if(NOT NOVERSION)
+	add_custom_target(
+		version
+		${CMAKE_COMMAND}
+		-D SRC=${PROJECT_SOURCE_DIR}/cmake/version.h.in
+		-D DST=${PROJECT_SOURCE_DIR}/src/version.h
+		-P ${PROJECT_SOURCE_DIR}/cmake/version.cmake
+	)
+endif()
 
 # mingw
 if(WIN32)
@@ -48,7 +50,10 @@ include_directories("src/")
 # build binary
 file(GLOB SRC_ALL src/*.cpp src/*.h)
 add_executable(${PROJECT_NAME} ${SRC_ALL} src/resource.rc)
+
+if(NOT NOVERSION)
 add_dependencies(${CMAKE_PROJECT_NAME} version)
+endif()
 
 # link libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
