@@ -104,14 +104,15 @@ int main(int ArgumentCount, char **Arguments) {
 
 	// Init audio
 	if(Config.AudioEnabled) {
-		int MixFlags = MIX_INIT_OGG;
-		int MixInit = Mix_Init(MixFlags);
-		if((MixInit & MixFlags) != MixFlags) {
+
+		if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) < 0) {
 			std::cout << Mix_GetError() << std::endl;
 			return 1;
 		}
 
-		if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 1024) < 0) {
+		int MixFlags = MIX_INIT_OGG;
+		int MixInit = Mix_Init(MixFlags);
+		if((MixInit & MixFlags) != MixFlags) {
 			std::cout << Mix_GetError() << std::endl;
 			return 1;
 		}
