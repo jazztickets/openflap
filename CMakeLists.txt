@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 # constants
-add_definitions(-DGAME_VERSION="1.0.0")
+add_definitions(-DGAME_VERSION="1.0.1")
 
 # project name
 project(openflap)
